@@ -1,0 +1,169 @@
+@model Tenis3t.Models.Inventario
+
+@{
+    ViewData["Title"] = "Agregar Producto";
+}
+
+<div class="container mt-4">
+    <h2>Agregar Nuevo Producto</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form asp-action="Create" method="post" id="productoForm">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label asp-for="Nombre" class="form-label">Nombre del Producto</label>
+            <input asp-for="Nombre" class="form-control" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Genero" class="form-label">Género</label>
+            <select asp-for="Genero" class="form-select" id="generoSelect">
+                <option value="">Seleccione un género</option>
+                <option value="hombre">Hombre</option>
+                <option value="dama">Dama</option>
+            </select>
+            <span asp-validation-for="Genero" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Costo" class="form-label">Costo Unitario</label>
+            <input asp-for="Costo" class="form-control" id="costoInput" />
+            <span asp-validation-for="Costo" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PrecioVenta" class="form-label">Precio de Venta</label>
+            <input asp-for="PrecioVenta" class="form-control" id="precioVentaInput" />
+            <span asp-validation-for="PrecioVenta" class="text-danger"></span>
+        </div>
+
+        <!-- Sección de tallas (se mostrará dinámicamente) -->
+        <div class="mb-3" id="tallasSection" style="display:none;">
+            <h5>Stock por Tallas</h5>
+            <div id="tallasContainer"></div>
+            <div class="mt-2">
+                <label class="form-label">Total en Stock:</label>
+                <input type="text" class="form-control" id="totalStock" readonly />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Ganancia por Unidad</label>
+                    <input type="text" class="form-control" id="gananciaUnidad" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ganancia Total</label>
+                    <input type="text" class="form-control" id="gananciaTotal" readonly />
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save"></i> Guardar Producto
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formatoMoneda = new Intl.NumberFormat('es-CO', {
+                style: 'decimal',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+
+            // Tallas por género
+            const tallasPorGenero = {
+                'hombre': ['40', '41', '42', '43', '44', '45'],
+                'dama': ['35', '36', '37', '38', '39', '40']
+            };
+
+            // Manejador de cambio en el select de género
+            document.getElementById('generoSelect').addEventListener('change', function() {
+                const genero = this.value;
+                const tallasSection = document.getElementById('tallasSection');
+                const tallasContainer = document.getElementById('tallasContainer');
+                
+                if (genero && tallasPorGenero[genero]) {
+                    tallasSection.style.display = 'block';
+                    tallasContainer.innerHTML = '';
+                    
+                    // Crear inputs para cada talla
+                    tallasPorGenero[genero].forEach(talla => {
+                        const div = document.createElement('div');
+                        div.className = 'row mb-2';
+                        div.innerHTML = `
+                            <div class="col-md-2">
+                                <label class="form-label">Talla ${talla}</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
+                                       min="0" value="0" data-talla="${talla}" />
+                            </div>
+                        `;
+                        tallasContainer.appendChild(div);
+                    });
+                    
+                    // Calcular total inicial
+                    calcularTotalStock();
+                } else {
+                    tallasSection.style.display = 'none';
+                }
+            });
+
+            // Calcular ganancias
+            function calcularGanancias() {
+                const costo = parseFloat(document.getElementById('costoInput').value) || 0;
+                const precioVenta = parseFloat(document.getElementById('precioVentaInput').value) || 0;
+                const gananciaPorUnidad = precioVenta - costo;
+                const totalStock = parseInt(document.getElementById('totalStock').value) || 0;
+                const gananciaTotal = gananciaPorUnidad * totalStock;
+                
+                document.getElementById('gananciaUnidad').value = formatoMoneda.format(gananciaPorUnidad);
+                document.getElementById('gananciaTotal').value = formatoMoneda.format(gananciaTotal);
+            }
+
+            // Calcular total de stock
+            function calcularTotalStock() {
+                const inputs = document.querySelectorAll('.talla-input');
+                let total = 0;
+                
+                inputs.forEach(input => {
+                    total += parseInt(input.value) || 0;
+                });
+                
+                document.getElementById('totalStock').value = total;
+                calcularGanancias();
+            }
+
+            // Event listeners
+            document.getElementById('costoInput').addEventListener('input', calcularGanancias);
+            document.getElementById('precioVentaInput').addEventListener('input', calcularGanancias);
+            
+            // Delegación de eventos para los inputs de tallas
+            document.getElementById('tallasContainer').addEventListener('input', function(e) {
+                if (e.target.classList.contains('talla-input')) {
+                    calcularTotalStock();
+                }
+            });
+        });
+    </script>
+}

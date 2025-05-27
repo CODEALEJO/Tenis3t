@@ -1,0 +1,140 @@
+:root {
+  --bs-primary: #8a2be2;       /* Color morado principal */
+  --bs-primary-rgb: 138, 43, 226;
+  --bs-primary-bg-subtle: #e6e6fa; /* Lavanda claro */
+  --bs-primary-border-subtle: #9370db; /* Medio morado */
+  --bs-primary-text-emphasis: #4b0082; /* Índigo oscuro */
+}
+
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: #7b1fa2;
+  --bs-btn-hover-border-color: #6a1b9a;
+  --bs-btn-active-bg: #6a1b9a;
+  --bs-btn-active-border-color: #5d1790;
+  --bs-btn-disabled-bg: var(--bs-primary);
+  --bs-btn-disabled-border-color: var(--bs-primary);
+}
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #8a2be2;
+  /* Changed from #258cfb to purple (#8a2be2) */
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.footer {
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+  line-height: 60px;
+}
+
+.form-floating>.form-control-plaintext::placeholder,
+.form-floating>.form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating>.form-control-plaintext:focus::placeholder,
+.form-floating>.form-control:focus::placeholder {
+  text-align: start;
+}
+
+.custom-width {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-control[readonly] {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+/* Estilo para los labels */
+.form-label {
+  font-weight: 500;
+}
+
+.stock-info {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.producto-input {
+  margin-bottom: 0;
+}
+
+.field-validation-valid {
+  display: block;
+  min-height: 20px;
+}
+
+/* Additional purple styles for elements that were blue */
+.card-header.bg-primary {
+  background-color: #8a2be2 !important;
+  /* Purple header */
+}
+
+.navbar-light.bg-light {
+  background-color: #f8f9fa !important;
+  /* Light background for navbar */
+}
+
+.alert-success {
+  background-color: #d8bfd8;
+  /* Light purple for success alerts */
+  border-color: #8a2be2;
+  color: #4b0082;
+}
+
+.accordion-button:not(.collapsed) {
+  color: #4b0082;
+  /* Dark purple for accordion headers */
+  background-color: #e6e6fa;
+  /* Light lavender background */
+}
+
+.badge.bg-success {
+  background-color: #9370db !important;
+  /* Medium purple for badges */
+}
+
+.btn-outline-primary {
+  border-color: #8a2be2;
+  color: #8a2be2;
+}
+
+.btn-outline-primary:hover {
+  background-color: #8a2be2;
+  color: white;
+}
+
+.text-primary {
+  color: #8a2be2 !important;
+}

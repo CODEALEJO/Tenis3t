@@ -1,0 +1,143 @@
+@model List<Tenis3t.Models.Inventario>
+
+@{
+    ViewData["Title"] = "Inventario";
+}
+
+<div class="container mt-4">
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
+        <div class="container-fluid justify-content-center">
+            <div class="navbar-nav flex-row">
+                <a class="nav-link btn btn-outline-primary mx-2" asp-controller="Venta" asp-action="Index">Ventas</a>
+                <a class="nav-link btn btn-outline-secondary mx-2 active" asp-controller="Inventario" asp-action="Index">Inventario</a>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                    <button type="submit" class="nav-link btn btn-outline-danger mx-2" style="background:none; border:none;">
+                        Cerrar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <h2 class="mb-4 text-center">Inventario de Productos</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mx-auto" style="max-width: 800px;" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filtros de búsqueda -->
+    <div class="card mb-4 mx-auto" style="max-width: 1000px;">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 justify-content-center align-items-center">
+                <div class="col-md-8">
+                    <label for="nombre" class="form-label">Buscar por nombre:</label>
+                    <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto" value="@Context.Request.Query["nombre"]" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a asp-action="Create" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Nuevo Producto
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Listado de productos -->
+    <div class="accordion mx-auto" id="inventarioAccordion" style="max-width: 1000px;">
+        @foreach (var inventario in Model)
+        {
+            <div class="accordion-item mb-3 border rounded">
+                <h2 class="accordion-header" id="heading-@inventario.Id">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@inventario.Id" aria-expanded="false" aria-controls="collapse-@inventario.Id">
+                        <div class="d-flex justify-content-between w-100">
+                            <span class="fw-bold">@inventario.Nombre</span>
+                            <span class="text-muted me-3">Género: @(inventario.Genero == "hombre" ? "Hombre" : "Dama")</span>
+                            <span class="text-muted me-3">Stock: @inventario.Cantidad</span>
+                            <span class="badge bg-success">Ganancia: $@inventario.GananciaTotalFormateado</span>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse-@inventario.Id" class="accordion-collapse collapse" aria-labelledby="heading-@inventario.Id" data-bs-parent="#inventarioAccordion">
+                    <div class="accordion-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <p><strong>Costo Unitario:</strong> $@inventario.CostoFormateado</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Precio de Venta:</strong> $@inventario.PrecioVentaFormateado</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Ganancia por Unidad:</strong> $@inventario.GananciaPorUnidadFormateado</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Mostrar stock por tallas -->
+                        @if (inventario.Tallas != null && inventario.Tallas.Any())
+                        {
+                            <div class="mb-3">
+                                <h6>Stock por Tallas:</h6>
+                                <div class="row">
+                                    @foreach (var talla in inventario.Tallas.OrderBy(t => t.Talla))
+                                    {
+                                        <div class="col-md-2 mb-2">
+                                            <div class="card">
+                                                <div class="card-body p-2 text-center">
+                                                    <h6 class="card-title">Talla @talla.Talla</h6>
+                                                    <p class="card-text">@talla.Cantidad unidades</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <a asp-action="Edit" asp-route-id="@inventario.Id" class="btn btn-warning btn-sm me-2">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@inventario.Id" class="btn btn-danger btn-sm me-2">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const nombreInput = document.getElementById('nombre');
+            const searchForm = document.querySelector('form[method="get"]');
+
+            function handleNombreChange() {
+                if (nombreInput.value === '') {
+                    searchForm.submit();
+                }
+            }
+
+            nombreInput.addEventListener('input', function () {
+                clearTimeout(this.timer);
+                this.timer = setTimeout(function () {
+                    handleNombreChange();
+                }, 500);
+            });
+        });
+    </script>
+}

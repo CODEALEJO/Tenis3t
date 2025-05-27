@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Tenis3t.props" />
+</Project>
