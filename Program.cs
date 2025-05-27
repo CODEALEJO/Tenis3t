@@ -3,9 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Tenis3t.Data;
-// using Tenis3t.Services;
-// using Tenis3t.Services.Interfaces;
-using Tenis3t.Data; // Asegúrate de que este using sea correcto
 
 // Configuración regional para Colombia
 var cultureInfo = new CultureInfo("es-CO");
