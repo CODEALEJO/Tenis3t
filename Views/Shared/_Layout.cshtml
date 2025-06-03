@@ -3,33 +3,34 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - 3T SHOES</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <title>@ViewData["Title"] - Tenis3t</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <style>
-        html, body {
-            height: 100%;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-        main {
-            flex: 1;
-        }
-    </style>
-    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    @if (ViewContext.RouteData.Values["controller"].ToString() == "Account" && 
-         ViewContext.RouteData.Values["action"].ToString() == "Login")
+    @if (!IsSectionDefined("NoNavbar"))
     {
         <header>
-            <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-primary border-bottom box-shadow mb-3">
-                <div class="container">
-                    <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">3T SHOES</a>
-                    <partial name="_LoginPartial" />
+            <!-- Barra de navegación global -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
+                <div class="container-fluid justify-content-center">
+                    <div class="navbar-nav flex-row">
+                        <a class="nav-link btn btn-outline-primary mx-2" asp-controller="Venta" asp-action="Index">
+                            <i class="bi bi-cash"></i> Ventas
+                        </a>
+                        <a class="nav-link btn btn-outline-secondary mx-2" asp-controller="Inventario" asp-action="Index">
+                            <i class="bi bi-box-seam"></i> Inventario
+                        </a>
+                        <a class="nav-link btn btn-outline-success mx-2" asp-controller="Prestamo" asp-action="Index">
+                            <i class="bi bi-arrow-left-right"></i> Préstamos
+                        </a>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <button type="submit" class="nav-link btn btn-outline-danger mx-2" style="background:none; border:none;">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </nav>
         </header>
@@ -41,15 +42,12 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted bg-light mt-auto">
-        <div class="container text-center">
-            &copy; @DateTime.Now.Year - 3T SHOES
-        </div>
-    </footer>
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @* Ignora la sección si no se usa *@
+    @RenderSection("NoNavbar", required: false)
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

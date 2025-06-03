@@ -419,3 +419,4 @@ C:\Users\alejo\OneDrive\Escritorio\Tenis3t\obj\Debug\net8.0\refint\Tenis3t.dll
 C:\Users\alejo\OneDrive\Escritorio\Tenis3t\obj\Debug\net8.0\Tenis3t.pdb
 C:\Users\alejo\OneDrive\Escritorio\Tenis3t\obj\Debug\net8.0\Tenis3t.genruntimeconfig.cache
 C:\Users\alejo\OneDrive\Escritorio\Tenis3t\obj\Debug\net8.0\ref\Tenis3t.dll
+C:\Users\alejo\OneDrive\Escritorio\Tenis3t\obj\Debug\net8.0\Tenis3t.sourcelink.json

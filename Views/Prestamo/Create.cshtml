@@ -1,0 +1,90 @@
+@model Tenis3t.Models.Prestamo
+
+@{
+    ViewData["Title"] = $"Nuevo Préstamo {ViewBag.TipoPrestamo}";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="TipoPrestamo" />
+
+                <div class="form-group mb-3">
+                    <label class="control-label">Producto</label>
+                    <select id="productoSelect" class="form-select" asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))">
+                        <option value="">Seleccione un producto</option>
+                    </select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="TallaInventarioId" class="control-label">Talla</label>
+                    <select asp-for="TallaInventarioId" class="form-select" id="tallaSelect" disabled>
+                        <option value="">Primero seleccione un producto</option>
+                    </select>
+                    <span asp-validation-for="TallaInventarioId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="LocalPersona" class="control-label">
+                        @(Model.TipoPrestamo == "Realizado" ? "Local/Persona que recibió" : "Local/Persona que prestó")
+                    </label>
+                    <input asp-for="LocalPersona" class="form-control" />
+                    <span asp-validation-for="LocalPersona" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Cantidad" class="control-label"></label>
+                    <input asp-for="Cantidad" class="form-control" min="1" />
+                    <span asp-validation-for="Cantidad" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="FechaDevolucionEstimada" class="control-label">Fecha Devolución Estimada</label>
+                    <input asp-for="FechaDevolucionEstimada" class="form-control" type="date" 
+                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="FechaDevolucionEstimada" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Registrar Préstamo
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            $('#productoSelect').change(function() {
+                var productoId = $(this).val();
+                if (productoId) {
+                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId }, function(data) {
+                        $('#tallaSelect').empty();
+                        $('#tallaSelect').append('<option value="">Seleccione una talla</option>');
+                        $.each(data, function(index, talla) {
+                            $('#tallaSelect').append(`<option value="${talla.id}">${talla.talla} (Disponibles: ${talla.cantidad})</option>`);
+                        });
+                        $('#tallaSelect').prop('disabled', false);
+                    });
+                } else {
+                    $('#tallaSelect').empty();
+                    $('#tallaSelect').append('<option value="">Primero seleccione un producto</option>');
+                    $('#tallaSelect').prop('disabled', true);
+                }
+            });
+        });
+    </script>
+}
