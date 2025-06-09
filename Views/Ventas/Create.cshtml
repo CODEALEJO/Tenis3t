@@ -1,0 +1,234 @@
+@model Tenis3t.Models.VentaViewModel
+
+@{
+    ViewData["Title"] = "Nueva Venta";
+}
+
+<h1>Nueva Venta</h1>
+
+<form asp-action="Create" id="ventaForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <div class="form-group">
+        <label asp-for="Cliente" class="control-label"></label>
+        <input asp-for="Cliente" class="form-control" />
+        <span asp-validation-for="Cliente" class="text-danger"></span>
+    </div>
+
+    <h4>Productos</h4>
+    <div id="detallesContainer">
+        @for (int i = 0; i < Model.Detalles.Count; i++)
+        {
+            <div class="detalle-item mb-3 p-3 border">
+                <div class="row">
+                    <div class="col-md-5">
+                        <label class="control-label">Producto</label>
+                        <select asp-for="@Model.Detalles[i].TallaInventarioId" class="form-control producto-select" 
+                                data-index="@i" onchange="actualizarDisponibilidad(this)">
+                            <option value="">Seleccione un producto</option>
+                            @foreach (var item in ViewBag.InventarioDisponible)
+                            {
+                                foreach (var talla in item.Tallas)
+                                {
+                                    if (talla.Cantidad > 0)
+                                    {
+                                        <option value="@talla.Id" 
+                                                data-nombre="@item.Nombre" 
+                                                data-talla="@talla.Talla" 
+                                                data-precio="@item.PrecioVenta" 
+                                                data-disponible="@talla.Cantidad">
+                                            @item.Nombre - Talla: @talla.Talla (Disponible: @talla.Cantidad)
+                                        </option>
+                                    }
+                                }
+                            }
+                        </select>
+                        <input type="hidden" asp-for="@Model.Detalles[i].NombreProducto" class="nombre-producto" />
+                        <input type="hidden" asp-for="@Model.Detalles[i].Talla" class="talla-producto" />
+                        <input type="hidden" asp-for="@Model.Detalles[i].PrecioUnitario" class="precio-producto" />
+                        <input type="hidden" asp-for="@Model.Detalles[i].Disponible" class="disponible-producto" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="@Model.Detalles[i].Cantidad" class="control-label"></label>
+                        <input asp-for="@Model.Detalles[i].Cantidad" class="form-control cantidad-input" min="1" />
+                        <span asp-validation-for="@Model.Detalles[i].Cantidad" class="text-danger"></span>
+                        <small class="text-muted disponible-text">Disponible: <span>0</span></small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="control-label">Subtotal</label>
+                        <input type="text" class="form-control subtotal-input" readonly value="0" />
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(this)">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="form-group">
+        <button type="button" class="btn btn-secondary" onclick="agregarDetalle()">Agregar Producto</button>
+    </div>
+
+    <div class="form-group mt-4">
+        <h4>Total: <span id="totalVenta">0</span></h4>
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Confirmar Venta" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Función para agregar un nuevo detalle
+        function agregarDetalle() {
+            var index = $('#detallesContainer .detalle-item').length;
+            var html = `
+                <div class="detalle-item mb-3 p-3 border">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <label class="control-label">Producto</label>
+                            <select name="Detalles[${index}].TallaInventarioId" class="form-control producto-select" 
+                                    data-index="${index}" onchange="actualizarDisponibilidad(this)">
+                                <option value="">Seleccione un producto</option>
+                                @foreach (var item in ViewBag.InventarioDisponible)
+                                {
+                                    foreach (var talla in item.Tallas)
+                                    {
+                                        if (talla.Cantidad > 0)
+                                        {
+                                            <option value="@talla.Id" 
+                                                    data-nombre="@item.Nombre" 
+                                                    data-talla="@talla.Talla" 
+                                                    data-precio="@item.PrecioVenta" 
+                                                    data-disponible="@talla.Cantidad">
+                                                @item.Nombre - Talla: @talla.Talla (Disponible: @talla.Cantidad)
+                                            </option>
+                                        }
+                                    }
+                                }
+                            </select>
+                            <input type="hidden" name="Detalles[${index}].NombreProducto" class="nombre-producto" />
+                            <input type="hidden" name="Detalles[${index}].Talla" class="talla-producto" />
+                            <input type="hidden" name="Detalles[${index}].PrecioUnitario" class="precio-producto" />
+                            <input type="hidden" name="Detalles[${index}].Disponible" class="disponible-producto" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="control-label">Cantidad</label>
+                            <input name="Detalles[${index}].Cantidad" class="form-control cantidad-input" min="1" value="1" />
+                            <small class="text-muted disponible-text">Disponible: <span>0</span></small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="control-label">Subtotal</label>
+                            <input type="text" class="form-control subtotal-input" readonly value="0" />
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(this)">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#detallesContainer').append(html);
+        }
+
+        // Función para eliminar un detalle
+        function eliminarDetalle(button) {
+            if ($('#detallesContainer .detalle-item').length > 1) {
+                $(button).closest('.detalle-item').remove();
+                recalcularNumerosIndex();
+                calcularTotal();
+            } else {
+                alert('Debe haber al menos un producto en la venta.');
+            }
+        }
+
+        // Función para actualizar los números de índice después de eliminar
+        function recalcularNumerosIndex() {
+            $('#detallesContainer .detalle-item').each(function(index) {
+                $(this).find('select, input').each(function() {
+                    var name = $(this).attr('name');
+                    if (name) {
+                        name = name.replace(/\[\d+\]/, `[${index}]`);
+                        $(this).attr('name', name);
+                    }
+                });
+                $(this).find('.producto-select').attr('data-index', index);
+            });
+        }
+
+        // Función para actualizar la información cuando se selecciona un producto
+        function actualizarDisponibilidad(select) {
+            var selectedOption = $(select).find('option:selected');
+            var index = $(select).data('index');
+            var container = $(select).closest('.detalle-item');
+
+            if (selectedOption.val()) {
+                var nombre = selectedOption.data('nombre');
+                var talla = selectedOption.data('talla');
+                var precio = selectedOption.data('precio');
+                var disponible = selectedOption.data('disponible');
+
+                container.find('.nombre-producto').val(nombre);
+                container.find('.talla-producto').val(talla);
+                container.find('.precio-producto').val(precio);
+                container.find('.disponible-producto').val(disponible);
+                container.find('.disponible-text span').text(disponible);
+                container.find('.cantidad-input').attr('max', disponible);
+
+                // Calcular subtotal
+                var cantidad = container.find('.cantidad-input').val() || 1;
+                var subtotal = cantidad * precio;
+                container.find('.subtotal-input').val(subtotal.toLocaleString('es-CO'));
+
+                calcularTotal();
+            }
+        }
+
+        // Función para calcular el total
+        function calcularTotal() {
+            var total = 0;
+            $('.detalle-item').each(function() {
+                var precio = parseFloat($(this).find('.precio-producto').val()) || 0;
+                var cantidad = parseInt($(this).find('.cantidad-input').val()) || 0;
+                total += precio * cantidad;
+            });
+            $('#totalVenta').text(total.toLocaleString('es-CO'));
+        }
+
+        // Eventos
+        $(document).ready(function() {
+            // Calcular subtotal cuando cambia la cantidad
+            $(document).on('input', '.cantidad-input', function() {
+                var container = $(this).closest('.detalle-item');
+                var precio = parseFloat(container.find('.precio-producto').val()) || 0;
+                var cantidad = parseInt($(this).val()) || 0;
+                var disponible = parseInt(container.find('.disponible-producto').val()) || 0;
+
+                if (cantidad > disponible) {
+                    alert('No hay suficiente stock disponible');
+                    $(this).val(disponible);
+                    cantidad = disponible;
+                }
+
+                var subtotal = precio * cantidad;
+                container.find('.subtotal-input').val(subtotal.toLocaleString('es-CO'));
+                calcularTotal();
+            });
+
+            // Inicializar si no hay detalles
+            if ($('#detallesContainer .detalle-item').length === 0) {
+                agregarDetalle();
+            } else {
+                // Actualizar los detalles existentes al cargar
+                $('.producto-select').each(function() {
+                    if ($(this).val()) {
+                        actualizarDisponibilidad(this);
+                    }
+                });
+            }
+        });
+    </script>
+}

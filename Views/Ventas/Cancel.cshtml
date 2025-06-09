@@ -1,0 +1,54 @@
+@model Tenis3t.Models.Venta
+
+@{
+    ViewData["Title"] = "Cancelar Venta";
+}
+
+<h1>Cancelar Venta</h1>
+
+<h3>¿Está seguro que desea cancelar esta venta?</h3>
+<div>
+    <h4>Venta #@Model.Id</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            Fecha
+        </dt>
+        <dd class="col-sm-10">
+            @Model.FechaVenta.ToString("g")
+        </dd>
+        <dt class="col-sm-2">
+            Total
+        </dt>
+        <dd class="col-sm-10">
+            @Model.TotalFormateado
+        </dd>
+    </dl>
+
+    <h4>Productos que serán devueltos al inventario</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Talla</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detalle in Model.Detalles)
+            {
+                <tr>
+                    <td>@detalle.TallaInventario.Inventario.Nombre</td>
+                    <td>@detalle.TallaInventario.Talla</td>
+                    <td>@detalle.Cantidad</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <form asp-action="Cancel">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Confirmar Cancelación" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+    </form>
+</div>

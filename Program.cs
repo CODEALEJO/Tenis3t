@@ -55,14 +55,16 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 34)),
-        mySqlOptions => mySqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null
-        )
+        ServerVersion.AutoDetect(connectionString), // Usa AutoDetect para mayor compatibilidad
+        mySqlOptions => 
+        {
+            mySqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+            mySqlOptions.CommandTimeout(180); // Aumenta el timeout si es necesario
+        }
     ));
-
 // Registro de servicios personalizados
 // builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddHttpContextAccessor();

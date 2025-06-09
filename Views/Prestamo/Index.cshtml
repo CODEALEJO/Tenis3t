@@ -1,7 +1,10 @@
 @model List<Tenis3t.Models.Prestamo>
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
 
 @{
-    ViewData["Title"] = "Préstamos";
+    ViewData["Title"] = "Prestamos";
+    var usuarioActual = await UserManager.GetUserAsync(User);
 }
 
 <div class="container mt-4">
@@ -55,10 +58,10 @@
                 <div class="d-flex justify-content-between">
                     <div>
                         <a asp-action="Create" asp-route-tipo="realizados" class="btn btn-success me-2">
-                            <i class="bi bi-plus-circle"></i> Nuevo Préstamo Realizado
+                            <i class="bi bi-plus-circle"></i> Realizar préstamo 
                         </a>
                         <a asp-action="Create" asp-route-tipo="recibidos" class="btn btn-info">
-                            <i class="bi bi-plus-circle"></i> Nuevo Préstamo Recibido
+                            <i class="bi bi-plus-circle"></i> Recibir préstamo
                         </a>
                     </div>
                     <span class="badge bg-secondary align-self-center">
@@ -91,11 +94,25 @@
                     <tr class="@(item.EstaVencido ? "table-danger" : "")">
                         <td>@item.Inventario?.Nombre</td>
                         <td>
-                            <span class="badge @(item.TipoPrestamo == "Realizado" ? "bg-warning" : "bg-info")">
-                                @item.TipoPrestamo
-                            </span>
+                            @if (item.UsuarioPrestamistaId == usuarioActual.Id)
+                            {
+                                <span class="badge bg-warning">Realizado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">Recibido</span>
+                            }
                         </td>
-                        <td>@item.LocalPersona</td>
+                        <td>
+                            @if (item.UsuarioPrestamistaId == usuarioActual.Id)
+                            {
+                                @item.UsuarioReceptor?.UserName
+                            }
+                            else
+                            {
+                                @item.UsuarioPrestamista?.UserName
+                            }
+                        </td>
                         <td>@item.Cantidad</td>
                         <td>@item.FechaPrestamo.ToString("dd/MM/yyyy")</td>
                         <td>@item.FechaDevolucionEstimada.ToString("dd/MM/yyyy")</td>
@@ -106,11 +123,15 @@
                         </td>
                         <td>@item.DiasRestantes</td>
                         <td>
-                            @if (item.Estado == "Pendiente")
+                            @if (item.Estado == "Prestado" && item.UsuarioPrestamistaId == usuarioActual.Id)
                             {
                                 <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-success">
                                     <i class="bi bi-check-circle"></i> Devolver
                                 </a>
+                            }
+                            else if (item.Estado == "Prestado")
+                            {
+                                <span class="text-muted">Esperando devolución</span>
                             }
                             else
                             {
@@ -129,7 +150,7 @@
     {
         return estado switch
         {
-            "Pendiente" => "bg-warning",
+            "Prestado" => "bg-warning",
             "Devuelto" => "bg-success",
             "Vencido" => "bg-danger",
             _ => "bg-secondary",

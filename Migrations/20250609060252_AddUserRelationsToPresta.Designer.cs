@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenis3t.Data;
 
@@ -10,9 +11,11 @@ using Tenis3t.Data;
 namespace Tenis3t.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250609060252_AddUserRelationsToPresta")]
+    partial class AddUserRelationsToPresta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -211,33 +214,6 @@ namespace Tenis3t.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Tenis3t.Models.DetalleVenta", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("PrecioUnitario")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("TallaInventarioId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VentaId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TallaInventarioId");
-
-                    b.HasIndex("VentaId");
-
-                    b.ToTable("DetallesVenta", (string)null);
-                });
-
             modelBuilder.Entity("Tenis3t.Models.Inventario", b =>
                 {
                     b.Property<int>("Id")
@@ -350,39 +326,6 @@ namespace Tenis3t.Migrations
                     b.ToTable("TallasInventario", (string)null);
                 });
 
-            modelBuilder.Entity("Tenis3t.Models.Venta", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Cliente")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<DateTime>("FechaVenta")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<decimal>("Total")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("UsuarioVendedorId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("varchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsuarioVendedorId");
-
-                    b.ToTable("Ventas");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -434,25 +377,6 @@ namespace Tenis3t.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Tenis3t.Models.DetalleVenta", b =>
-                {
-                    b.HasOne("Tenis3t.Models.TallaInventario", "TallaInventario")
-                        .WithMany()
-                        .HasForeignKey("TallaInventarioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Tenis3t.Models.Venta", "Venta")
-                        .WithMany("Detalles")
-                        .HasForeignKey("VentaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TallaInventario");
-
-                    b.Navigation("Venta");
-                });
-
             modelBuilder.Entity("Tenis3t.Models.Inventario", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Usuario")
@@ -502,25 +426,9 @@ namespace Tenis3t.Migrations
                     b.Navigation("Inventario");
                 });
 
-            modelBuilder.Entity("Tenis3t.Models.Venta", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "UsuarioVendedor")
-                        .WithMany()
-                        .HasForeignKey("UsuarioVendedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("UsuarioVendedor");
-                });
-
             modelBuilder.Entity("Tenis3t.Models.Inventario", b =>
                 {
                     b.Navigation("Tallas");
-                });
-
-            modelBuilder.Entity("Tenis3t.Models.Venta", b =>
-                {
-                    b.Navigation("Detalles");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,74 @@
+@model Tenis3t.Models.Venta
+
+@{
+    ViewData["Title"] = "Detalles de Venta";
+}
+
+<h1>Detalles de Venta</h1>
+
+<div>
+    <h4>Venta #@Model.Id</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            Fecha
+        </dt>
+        <dd class="col-sm-10">
+            @Model.FechaVenta.ToString("g")
+        </dd>
+        <dt class="col-sm-2">
+            Vendedor
+        </dt>
+        <dd class="col-sm-10">
+            @Model.UsuarioVendedor.Email
+        </dd>
+        <dt class="col-sm-2">
+            Cliente
+        </dt>
+        <dd class="col-sm-10">
+            @(Model.Cliente ?? "Público general")
+        </dd>
+        <dt class="col-sm-2">
+            Estado
+        </dt>
+        <dd class="col-sm-10">
+            <span class="badge @(Model.Estado == "Completada" ? "badge-success" : "badge-danger")">
+                @Model.Estado
+            </span>
+        </dd>
+    </dl>
+
+    <h4>Productos</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Talla</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detalle in Model.Detalles)
+            {
+                <tr>
+                    <td>@detalle.TallaInventario.Inventario.Nombre</td>
+                    <td>@detalle.TallaInventario.Talla</td>
+                    <td>@detalle.Cantidad</td>
+                    <td>@detalle.PrecioUnitarioFormateado</td>
+                    <td>@detalle.Subtotal.ToString("N0", new System.Globalization.CultureInfo("es-CO"))</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                <td><strong>@Model.TotalFormateado</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<div>
+    <a asp-action="Index" class="btn btn-secondary">Volver a la lista</a>
+</div>

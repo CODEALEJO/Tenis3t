@@ -1,30 +1,39 @@
 @model Tenis3t.Models.Prestamo
-
 @{
-    ViewData["Title"] = $"Nuevo Préstamo {ViewBag.TipoPrestamo}";
+    ViewData["Title"] = $"Nuevo Préstamo {(Model.TipoPrestamo == "Realizado" ? "Realizado" : "Recibido")}";
 }
 
 <div class="container mt-4">
     <h2>@ViewData["Title"]</h2>
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <hr />
     <div class="row">
         <div class="col-md-6">
-            <form asp-action="Create">
+            <form asp-action="Create" id="prestamoForm" method="post">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <input type="hidden" asp-for="TipoPrestamo" />
-
+                
                 <div class="form-group mb-3">
                     <label class="control-label">Producto</label>
-                    <select id="productoSelect" class="form-select" asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))">
+                    <select id="productoSelect" class="form-select" 
+                            asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))" required>
                         <option value="">Seleccione un producto</option>
                     </select>
+                    <span class="text-danger" id="productoValidation"></span>
                 </div>
 
                 <div class="form-group mb-3">
                     <label asp-for="TallaInventarioId" class="control-label">Talla</label>
-                    <select asp-for="TallaInventarioId" class="form-select" id="tallaSelect" disabled>
-                        <option value="">Primero seleccione un producto</option>
+                    <select asp-for="TallaInventarioId" class="form-select" id="tallaSelect" required>
+                        <option value="">Seleccione una talla</option>
                     </select>
                     <span asp-validation-for="TallaInventarioId" class="text-danger"></span>
                 </div>
@@ -33,20 +42,26 @@
                     <label asp-for="LocalPersona" class="control-label">
                         @(Model.TipoPrestamo == "Realizado" ? "Local/Persona que recibió" : "Local/Persona que prestó")
                     </label>
-                    <input asp-for="LocalPersona" class="form-control" />
+                    <input asp-for="LocalPersona" class="form-control" list="usuariosList" required />
+                    <datalist id="usuariosList">
+                        @foreach (var usuario in ViewBag.Usuarios)
+                        {
+                            <option value="@usuario">@usuario</option>
+                        }
+                    </datalist>
                     <span asp-validation-for="LocalPersona" class="text-danger"></span>
                 </div>
 
                 <div class="form-group mb-3">
                     <label asp-for="Cantidad" class="control-label"></label>
-                    <input asp-for="Cantidad" class="form-control" min="1" />
+                    <input asp-for="Cantidad" class="form-control" min="1" required />
                     <span asp-validation-for="Cantidad" class="text-danger"></span>
                 </div>
 
                 <div class="form-group mb-3">
                     <label asp-for="FechaDevolucionEstimada" class="control-label">Fecha Devolución Estimada</label>
-                    <input asp-for="FechaDevolucionEstimada" class="form-control" type="date" 
-                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <input asp-for="FechaDevolucionEstimada" class="form-control" type="date"
+                           min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                     <span asp-validation-for="FechaDevolucionEstimada" class="text-danger"></span>
                 </div>
 
@@ -64,26 +79,42 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
     <script>
-        $(document).ready(function() {
-            $('#productoSelect').change(function() {
+        $(document).ready(function () {
+            // Manejar cambio de producto
+            $('#productoSelect').change(function () {
                 var productoId = $(this).val();
                 if (productoId) {
-                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId }, function(data) {
-                        $('#tallaSelect').empty();
-                        $('#tallaSelect').append('<option value="">Seleccione una talla</option>');
-                        $.each(data, function(index, talla) {
-                            $('#tallaSelect').append(`<option value="${talla.id}">${talla.talla} (Disponibles: ${talla.cantidad})</option>`);
+                    $('#productoValidation').text('');
+                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId })
+                        .done(function (data) {
+                            $('#tallaSelect').empty();
+                            $('#tallaSelect').append('<option value="">Seleccione una talla</option>');
+                            $.each(data, function (index, talla) {
+                                $('#tallaSelect').append(`<option value="${talla.id}">${talla.talla} (Disponibles: ${talla.cantidad})</option>`);
+                            });
+                        })
+                        .fail(function () {
+                            alert('Error al cargar tallas');
                         });
-                        $('#tallaSelect').prop('disabled', false);
-                    });
                 } else {
                     $('#tallaSelect').empty();
-                    $('#tallaSelect').append('<option value="">Primero seleccione un producto</option>');
-                    $('#tallaSelect').prop('disabled', true);
+                    $('#tallaSelect').append('<option value="">Seleccione un producto primero</option>');
                 }
+            });
+
+            // Validación personalizada antes de enviar
+            $('#prestamoForm').submit(function(e) {
+                if ($('#productoSelect').val() === '') {
+                    $('#productoValidation').text('Debe seleccionar un producto');
+                    e.preventDefault();
+                    return false;
+                }
+                return true;
             });
         });
     </script>

@@ -11,10 +11,12 @@ namespace Tenis3t.Data
             : base(options)
         {
         }
+
         public DbSet<TallaInventario> TallasInventario { get; set; }
         public DbSet<Inventario> Inventarios { get; set; }
         public DbSet<Prestamo> Prestamos { get; set; }
-
+        public DbSet<Venta> Ventas { get; set; }
+        public DbSet<DetalleVenta> DetallesVenta { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,14 +29,24 @@ namespace Tenis3t.Data
                 .HasForeignKey(t => t.InventarioId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configuración de Prestamo con TallaInventario
-            modelBuilder.Entity<Prestamo>()
-                .HasOne(p => p.TallaInventario)
-                .WithMany()
-                .HasForeignKey(p => p.TallaInventarioId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Configuración de Prestamo
+            modelBuilder.Entity<Prestamo>(entity =>
+            {
+                entity.HasOne(p => p.TallaInventario)
+                    .WithMany()
+                    .HasForeignKey(p => p.TallaInventarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-            // Elimina la configuración de Prestamo con Inventario
+                entity.HasOne(p => p.UsuarioPrestamista)
+                    .WithMany()
+                    .HasForeignKey(p => p.UsuarioPrestamistaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.UsuarioReceptor)
+                    .WithMany()
+                    .HasForeignKey(p => p.UsuarioReceptorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Configuración de Inventario con Usuario
             modelBuilder.Entity<Inventario>()
@@ -43,15 +55,32 @@ namespace Tenis3t.Data
                 .HasForeignKey(i => i.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configuración de Prestamo con Usuario
-            modelBuilder.Entity<Prestamo>()
-                .HasOne(p => p.Usuario)
-                .WithMany()
-                .HasForeignKey(p => p.UsuarioId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Configuración de Venta
+            modelBuilder.Entity<Venta>(entity =>
+            {
+                entity.HasOne(v => v.UsuarioVendedor)
+                    .WithMany()
+                    .HasForeignKey(v => v.UsuarioVendedorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configuración de DetalleVenta
+            modelBuilder.Entity<DetalleVenta>(entity =>
+            {
+                entity.HasOne(d => d.Venta)
+                    .WithMany(v => v.Detalles)
+                    .HasForeignKey(d => d.VentaId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.TallaInventario)
+                    .WithMany()
+                    .HasForeignKey(d => d.TallaInventarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Cambiar nombre de tabla para TallaInventario
             modelBuilder.Entity<TallaInventario>().ToTable("TallasInventario");
+            modelBuilder.Entity<DetalleVenta>().ToTable("DetallesVenta");
         }
     }
 }
