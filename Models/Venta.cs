@@ -16,7 +16,7 @@ namespace Tenis3t.Models
 
         [Required(ErrorMessage = "El estado de la venta es obligatorio")]
         [StringLength(20)]
-        public string Estado { get; set; } = "Completada"; // Puede ser "Completada", "Cancelada", etc.
+        public string Estado { get; set; } // "Completada", "Cancelada"
 
         [Required(ErrorMessage = "El total de la venta es obligatorio")]
         [Range(0.01, double.MaxValue, ErrorMessage = "El total debe ser mayor a 0")]

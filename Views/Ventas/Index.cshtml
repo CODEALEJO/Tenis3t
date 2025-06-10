@@ -6,6 +6,20 @@
 
 <h1>Ventas</h1>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <p>
     <a asp-action="Create" class="btn btn-primary">Nueva Venta</a>
 </p>
@@ -29,7 +43,7 @@
                     <td>@item.Id</td>
                     <td>@item.FechaVenta.ToString("g")</td>
                     <td>@(item.Cliente ?? "Público general")</td>
-                    <td>@item.TotalFormateado</td>
+                    <td>@item.Total.ToString("C")</td>
                     <td>
                         <span class="badge @(item.Estado == "Completada" ? "badge-success" : "badge-danger")">
                             @item.Estado
@@ -39,7 +53,39 @@
                         <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info btn-sm">Detalles</a>
                         @if (item.Estado == "Completada")
                         {
-                            <a asp-action="Cancel" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Cancelar</a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Editar</a>
+                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal-@item.Id">
+                                Eliminar
+                            </button>
+                            
+                            <!-- Modal para confirmar eliminación -->
+                            <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <form asp-action="Delete" method="post">
+                                            <div class="modal-body">
+                                                <p>¿Está seguro que desea cancelar esta venta? Esta acción no se puede deshacer.</p>
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <div class="form-group">
+                                                    <label for="claveSeguridad">Clave de Seguridad:</label>
+                                                    <input type="password" class="form-control" id="claveSeguridad" name="claveSeguridad" required />
+                                                    <small class="form-text text-muted">Ingrese la clave de seguridad para confirmar.</small>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-danger">Confirmar Eliminación</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         }
                     </td>
                 </tr>
@@ -47,3 +93,16 @@
         </tbody>
     </table>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Cierra automáticamente los mensajes de alerta después de 5 segundos
+            setTimeout(function () {
+                $(".alert").fadeOut("slow", function () {
+                    $(this).remove();
+                });
+            }, 5000);
+        });
+    </script>
+}

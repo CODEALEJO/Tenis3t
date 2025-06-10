@@ -17,6 +17,7 @@ namespace Tenis3t.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<VentasController> _logger;
+        private const string DeletePassword = "3T2025"; // Clave para eliminar ventas
 
         public VentasController(
             ApplicationDbContext context,
@@ -74,7 +75,6 @@ namespace Tenis3t.Controllers
                 return View(model);
             }
 
-            // Obtenemos la estrategia de ejecución
             var executionStrategy = _context.Database.CreateExecutionStrategy();
 
             try
@@ -85,7 +85,6 @@ namespace Tenis3t.Controllers
                     {
                         try
                         {
-                            // Crear la venta principal
                             var venta = new Venta
                             {
                                 FechaVenta = DateTime.Now,
@@ -186,12 +185,86 @@ namespace Tenis3t.Controllers
             return View(venta);
         }
 
-        // GET: Ventas/Cancel/5
-        public async Task<IActionResult> Cancel(int? id)
+        // GET: Ventas/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
             {
                 return NotFound();
+            }
+
+            var usuarioActual = await _userManager.GetUserAsync(User);
+            var venta = await _context.Ventas
+                .Include(v => v.Detalles)
+                    .ThenInclude(d => d.TallaInventario)
+                        .ThenInclude(t => t.Inventario)
+                .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
+
+            if (venta == null)
+            {
+                return NotFound();
+            }
+
+            if (venta.Estado != "Completada")
+            {
+                TempData["ErrorMessage"] = "Solo se pueden editar ventas completadas";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(venta);
+        }
+
+        // POST: Ventas/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Venta venta)
+        {
+            if (id != venta.Id)
+            {
+                return NotFound();
+            }
+
+            var usuarioActual = await _userManager.GetUserAsync(User);
+
+            try
+            {
+                var ventaExistente = await _context.Ventas
+                    .Include(v => v.Detalles)
+                    .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
+
+                if (ventaExistente == null)
+                {
+                    return NotFound();
+                }
+
+                ventaExistente.Cliente = venta.Cliente;
+                _context.Update(ventaExistente);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!VentaExists(venta.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        // POST: Ventas/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, string claveSeguridad)
+        {
+            if (claveSeguridad != DeletePassword)
+            {
+                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
+                return RedirectToAction(nameof(Index));
             }
 
             var usuarioActual = await _userManager.GetUserAsync(User);
@@ -205,29 +278,10 @@ namespace Tenis3t.Controllers
                 return NotFound();
             }
 
-            return View(venta);
-        }
-
-        // POST: Ventas/Cancel/5
-        [HttpPost, ActionName("Cancel")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CancelConfirmed(int id)
-        {
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var usuarioActual = await _userManager.GetUserAsync(User);
-                    var venta = await _context.Ventas
-                        .Include(v => v.Detalles)
-                            .ThenInclude(d => d.TallaInventario)
-                        .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id && v.Estado == "Completada");
-
-                    if (venta == null)
-                    {
-                        return NotFound();
-                    }
-
                     // Revertir el inventario para cada detalle
                     foreach (var detalle in venta.Detalles)
                     {
@@ -242,16 +296,22 @@ namespace Tenis3t.Controllers
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = "Venta cancelada exitosamente";
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    ModelState.AddModelError(string.Empty, $"Error al cancelar la venta: {ex.Message}");
                     _logger.LogError(ex, "Error al cancelar venta");
-                    return View("Error");
+                    TempData["ErrorMessage"] = $"Error al cancelar la venta: {ex.Message}";
                 }
             }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool VentaExists(int id)
+        {
+            return _context.Ventas.Any(e => e.Id == id);
         }
     }
 }

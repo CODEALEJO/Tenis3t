@@ -7,29 +7,34 @@
 <h1>Detalles de Venta</h1>
 
 <div>
-    <h4>Venta #@Model.Id</h4>
     <hr />
     <dl class="row">
         <dt class="col-sm-2">
-            Fecha
+            @Html.DisplayNameFor(model => model.Id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Id)
+        </dd>
+        <dt class="col-sm-2">
+            Fecha Venta
         </dt>
         <dd class="col-sm-10">
             @Model.FechaVenta.ToString("g")
         </dd>
         <dt class="col-sm-2">
-            Vendedor
-        </dt>
-        <dd class="col-sm-10">
-            @Model.UsuarioVendedor.Email
-        </dd>
-        <dt class="col-sm-2">
-            Cliente
+            @Html.DisplayNameFor(model => model.Cliente)
         </dt>
         <dd class="col-sm-10">
             @(Model.Cliente ?? "Público general")
         </dd>
         <dt class="col-sm-2">
-            Estado
+            @Html.DisplayNameFor(model => model.Total)
+        </dt>
+        <dd class="col-sm-10">
+            @Model.Total.ToString("C")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Estado)
         </dt>
         <dd class="col-sm-10">
             <span class="badge @(Model.Estado == "Completada" ? "badge-success" : "badge-danger")">
@@ -37,9 +42,9 @@
             </span>
         </dd>
     </dl>
-
-    <h4>Productos</h4>
-    <table class="table">
+    
+    <h4>Productos Vendidos</h4>
+    <table class="table table-sm">
         <thead>
             <tr>
                 <th>Producto</th>
@@ -56,19 +61,17 @@
                     <td>@detalle.TallaInventario.Inventario.Nombre</td>
                     <td>@detalle.TallaInventario.Talla</td>
                     <td>@detalle.Cantidad</td>
-                    <td>@detalle.PrecioUnitarioFormateado</td>
-                    <td>@detalle.Subtotal.ToString("N0", new System.Globalization.CultureInfo("es-CO"))</td>
+                    <td>@detalle.PrecioUnitario.ToString("C")</td>
+                    <td>@detalle.Subtotal.ToString("C")</td>
                 </tr>
             }
         </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="4" class="text-right"><strong>Total:</strong></td>
-                <td><strong>@Model.TotalFormateado</strong></td>
-            </tr>
-        </tfoot>
     </table>
 </div>
 <div>
-    <a asp-action="Index" class="btn btn-secondary">Volver a la lista</a>
+    <a asp-action="Index" class="btn btn-primary">Volver a la lista</a>
+    @if (Model.Estado == "Completada")
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Editar</a>
+    }
 </div>
