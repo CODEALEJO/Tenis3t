@@ -23,15 +23,18 @@
             <form method="get" asp-action="Index" class="row g-3 justify-content-center align-items-center">
                 <div class="col-md-8">
                     <label for="nombre" class="form-label">Buscar por nombre:</label>
-                    <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto" value="@Context.Request.Query["nombre"]" />
+                    <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto"
+                        value="@Context.Request.Query["nombre"]" />
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                    <div class="d-grid gap-2 d-md-flex">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="bi bi-search"></i> Buscar
+                    <div class="d-flex flex-nowrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i>
+                            <span class="ms-1 d-none d-sm-inline">Buscar</span>
                         </button>
                         <a asp-action="Create" class="btn btn-success">
-                            <i class="bi bi-plus-circle"></i> Nuevo Producto
+                            <i class="bi bi-plus-circle"></i>
+                            <span class="ms-1 d-none d-sm-inline">Nuevo Producto</span>
                         </a>
                     </div>
                 </div>
@@ -45,31 +48,35 @@
         {
             <div class="accordion-item mb-3 border rounded">
                 <h2 class="accordion-header" id="heading-@inventario.Id">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@inventario.Id" aria-expanded="false" aria-controls="collapse-@inventario.Id">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse-@inventario.Id" aria-expanded="false"
+                        aria-controls="collapse-@inventario.Id">
                         <div class="d-flex justify-content-between w-100">
                             <span class="fw-bold">@inventario.Nombre</span>
-                            <span class="text-muted me-3">Género: @(inventario.Genero == "hombre" ? "Hombre" : "Dama")</span>
-                            <span class="text-muted me-3">Stock: @inventario.Cantidad</span>
-                            <span class="badge bg-success">Ganancia: $@inventario.GananciaTotalFormateado</span>
+                            <span class="text-muted me-3">Género: @(inventario.Genero == "hombre" ? "Hombre" :
+                                                            "Dama")</span>
+                        <span class="text-muted me-3">Stock: @inventario.Cantidad</span>
+                        <span class="badge bg-success">Ganancia: $@inventario.GananciaTotalFormateado</span>
+                    </div>
+                </button>
+            </h2>
+            <div id="collapse-@inventario.Id" class="accordion-collapse collapse"
+                aria-labelledby="heading-@inventario.Id" data-bs-parent="#inventarioAccordion">
+                <div class="accordion-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p><strong>Costo Unitario:</strong> $@inventario.CostoFormateado</p>
                         </div>
-                    </button>
-                </h2>
-                <div id="collapse-@inventario.Id" class="accordion-collapse collapse" aria-labelledby="heading-@inventario.Id" data-bs-parent="#inventarioAccordion">
-                    <div class="accordion-body">
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <p><strong>Costo Unitario:</strong> $@inventario.CostoFormateado</p>
-                            </div>
-                            <div class="col-md-4">
-                                <p><strong>Precio de Venta:</strong> $@inventario.PrecioVentaFormateado</p>
-                            </div>
-                            <div class="col-md-4">
-                                <p><strong>Ganancia por Unidad:</strong> $@inventario.GananciaPorUnidadFormateado</p>
-                            </div>
+                        <div class="col-md-4">
+                            <p><strong>Precio de Venta:</strong> $@inventario.PrecioVentaFormateado</p>
                         </div>
-                        
+                        <div class="col-md-4">
+                            <p><strong>Ganancia por Unidad:</strong> $@inventario.GananciaPorUnidadFormateado</p>
+                        </div>
+                    </div>
+
                         <!-- Mostrar stock por tallas -->
-                        @if (inventario.Tallas != null && inventario.Tallas.Any())
+                    @if (inventario.Tallas != null && inventario.Tallas.Any())
                         {
                             <div class="mb-3">
                                 <h6>Stock por Tallas:</h6>
