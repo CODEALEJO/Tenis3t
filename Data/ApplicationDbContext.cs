@@ -17,6 +17,10 @@ namespace Tenis3t.Data
         public DbSet<Prestamo> Prestamos { get; set; }
         public DbSet<Venta> Ventas { get; set; }
         public DbSet<DetalleVenta> DetallesVenta { get; set; }
+        public DbSet<MetodoPago> MetodoPagos { get; set; }
+        public DbSet<Pago> Pagos { get; set; }
+        public DbSet<Cliente> Clientes { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -27,7 +27,10 @@
 
         <div class="mb-3">
             <label asp-for="Genero" class="form-label">Género</label>
-            <input asp-for="Genero" class="form-control" readonly />
+            <select asp-for="Genero" class="form-select" id="generoSelect">
+                <option value="hombre" selected="@(Model.Genero == "hombre")">Hombre</option>
+                <option value="dama" selected="@(Model.Genero == "dama")">Dama</option>
+            </select>
             <span asp-validation-for="Genero" class="text-danger"></span>
         </div>
 
@@ -102,6 +105,45 @@
                 maximumFractionDigits: 0
             });
 
+            // Tallas por género
+            const tallasPorGenero = {
+                'hombre': ['40', '41', '42', '43', '44', '45'],
+                'dama': ['35', '36', '37', '38', '39', '40']
+            };
+
+            // Manejador de cambio en el select de género
+            document.getElementById('generoSelect').addEventListener('change', function() {
+                const genero = this.value;
+                const tallasContainer = document.getElementById('tallasContainer');
+                
+                if (genero && tallasPorGenero[genero]) {
+                    tallasContainer.innerHTML = '';
+                    
+                    // Crear inputs para cada talla
+                    tallasPorGenero[genero].forEach(talla => {
+                        // Verificar si ya existe una talla con este valor
+                        const inputExistente = document.querySelector(`input[name="tallas[${talla}]"]`);
+                        const valorExistente = inputExistente ? inputExistente.value : 0;
+                        
+                        const div = document.createElement('div');
+                        div.className = 'row mb-2';
+                        div.innerHTML = `
+                            <div class="col-md-2">
+                                <label class="form-label">Talla ${talla}</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
+                                       min="0" value="${valorExistente}" data-talla="${talla}" />
+                            </div>
+                        `;
+                        tallasContainer.appendChild(div);
+                    });
+                    
+                    // Calcular total inicial
+                    calcularTotalStock();
+                }
+            });
+
             // Calcular ganancias
             function calcularGanancias() {
                 const costo = parseFloat(document.getElementById('costoInput').value) || 0;
@@ -137,6 +179,9 @@
                     calcularTotalStock();
                 }
             });
+
+            // Calcular valores iniciales
+            calcularGanancias();
         });
     </script>
 }

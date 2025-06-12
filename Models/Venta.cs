@@ -31,12 +31,17 @@ namespace Tenis3t.Models
         [ForeignKey("UsuarioVendedorId")]
         public IdentityUser UsuarioVendedor { get; set; }
 
-        // Cliente (opcional, podría ser venta al público general)
-        [StringLength(100)]
-        public string? Cliente { get; set; }
+        // Cliente (relación modificada)
+        public int? ClienteId { get; set; }
+
+        [ForeignKey("ClienteId")]
+        public Cliente? Cliente { get; set; }
 
         // Detalles de la venta
         public List<DetalleVenta> Detalles { get; set; } = new List<DetalleVenta>();
+
+        // Pagos de la venta
+        public List<Pago> Pagos { get; set; } = new List<Pago>();
 
         // Propiedades calculadas
         [NotMapped]
@@ -47,5 +52,11 @@ namespace Tenis3t.Models
 
         [NotMapped]
         public decimal GananciaTotal => Detalles?.Sum(d => d.GananciaTotal) ?? 0;
+
+        [NotMapped]
+        public decimal TotalPagado => Pagos?.Sum(p => p.Monto) ?? 0;
+
+        [NotMapped]
+        public bool PagoCompleto => TotalPagado >= Total;
     }
 }

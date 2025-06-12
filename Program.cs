@@ -68,7 +68,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Registro de servicios personalizados
 // builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(20); // Tiempo de vida de la sesión
+    options.Cookie.HttpOnly = true; // La cookie solo es accesible por el servidor
+    options.Cookie.IsEssential = true; // Marca la cookie como esencial
+    options.Cookie.Name = "Tenis3t.Session"; // Nombre personalizado para la cookie
+});
 var app = builder.Build();
 // Crear roles al iniciar la aplicación
 using (var scope = app.Services.CreateScope())
@@ -101,7 +107,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

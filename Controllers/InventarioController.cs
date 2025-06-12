@@ -30,7 +30,7 @@ namespace Tenis3t.Controllers
             var usuarioActual = await _userManager.GetUserAsync(User);
 
             var inventarios = _context.Inventarios
-                .Include(i => i.Tallas) // ¡Esta línea es crucial!
+                .Include(i => i.Tallas)
                 .Where(i => i.UsuarioId == usuarioActual.Id);
 
             if (!string.IsNullOrEmpty(nombre))
@@ -64,10 +64,10 @@ namespace Tenis3t.Controllers
         public IActionResult Create()
         {
             ViewBag.Generos = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "hombre", Text = "Hombre" },
-            new SelectListItem { Value = "dama", Text = "Dama" }
-        };
+            {
+                new SelectListItem { Value = "hombre", Text = "Hombre" },
+                new SelectListItem { Value = "dama", Text = "Dama" }
+            };
 
             return View();
         }
@@ -87,6 +87,53 @@ namespace Tenis3t.Controllers
             {
                 try
                 {
+                    // Verificar si ya existe un producto con el mismo nombre y género
+                    var productoExistente = await _context.Inventarios
+                        .Include(i => i.Tallas)
+                        .FirstOrDefaultAsync(i => 
+                            i.UsuarioId == usuarioActual.Id && 
+                            i.Nombre.ToLower() == inventario.Nombre.ToLower() && 
+                            i.Genero == inventario.Genero);
+
+                    if (productoExistente != null)
+                    {
+                        // Actualizar el producto existente
+                        productoExistente.Costo = inventario.Costo;
+                        productoExistente.PrecioVenta = inventario.PrecioVenta;
+
+                        // Actualizar tallas
+                        if (tallas != null)
+                        {
+                            foreach (var talla in tallas)
+                            {
+                                if (talla.Value > 0)
+                                {
+                                    var tallaExistente = productoExistente.Tallas
+                                        .FirstOrDefault(t => t.Talla == talla.Key);
+
+                                    if (tallaExistente != null)
+                                    {
+                                        tallaExistente.Cantidad += talla.Value;
+                                    }
+                                    else
+                                    {
+                                        _context.TallasInventario.Add(new TallaInventario
+                                        {
+                                            InventarioId = productoExistente.Id,
+                                            Talla = talla.Key,
+                                            Cantidad = talla.Value
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+                        TempData["SuccessMessage"] = "Se actualizó el producto existente con las nuevas cantidades";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    // Si no existe, crear nuevo producto
                     _context.Add(inventario);
                     await _context.SaveChangesAsync();
 
@@ -95,7 +142,7 @@ namespace Tenis3t.Controllers
                     {
                         foreach (var talla in tallas)
                         {
-                            if (talla.Value > 0) // Solo agregar tallas con cantidad > 0
+                            if (talla.Value > 0)
                             {
                                 _context.TallasInventario.Add(new TallaInventario
                                 {
@@ -120,24 +167,32 @@ namespace Tenis3t.Controllers
             }
 
             ViewBag.Generos = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "hombre", Text = "Hombre" },
-            new SelectListItem { Value = "dama", Text = "Dama" }
-        };
+            {
+                new SelectListItem { Value = "hombre", Text = "Hombre" },
+                new SelectListItem { Value = "dama", Text = "Dama" }
+            };
 
             return View(inventario);
         }
-        // Los demás métodos (Edit, Delete, etc.) deben incluir validación de usuario
+
         public async Task<IActionResult> Edit(int id)
         {
             var usuarioActualId = _userManager.GetUserId(User);
             var inventario = await _context.Inventarios
+                .Include(i => i.Tallas)
                 .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == usuarioActualId);
 
             if (inventario == null)
             {
                 return NotFound();
             }
+
+            ViewBag.Generos = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "hombre", Text = "Hombre", Selected = inventario.Genero == "hombre" },
+                new SelectListItem { Value = "dama", Text = "Dama", Selected = inventario.Genero == "dama" }
+            };
+
             return View(inventario);
         }
 
@@ -172,6 +227,7 @@ namespace Tenis3t.Controllers
                 {
                     // Actualizar propiedades básicas
                     inventarioExistente.Nombre = inventario.Nombre;
+                    inventarioExistente.Genero = inventario.Genero;
                     inventarioExistente.Costo = inventario.Costo;
                     inventarioExistente.PrecioVenta = inventario.PrecioVenta;
 
@@ -236,6 +292,12 @@ namespace Tenis3t.Controllers
                 .Where(t => t.InventarioId == id)
                 .ToListAsync();
 
+            ViewBag.Generos = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "hombre", Text = "Hombre", Selected = inventario.Genero == "hombre" },
+                new SelectListItem { Value = "dama", Text = "Dama", Selected = inventario.Genero == "dama" }
+            };
+
             return View(inventario);
         }
 
@@ -285,6 +347,7 @@ namespace Tenis3t.Controllers
         {
             var usuarioActualId = _userManager.GetUserId(User);
             var inventario = await _context.Inventarios
+                .Include(i => i.Tallas)
                 .FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioActualId);
 
             if (inventario == null)

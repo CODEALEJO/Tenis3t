@@ -42,7 +42,7 @@
                 <tr>
                     <td>@item.Id</td>
                     <td>@item.FechaVenta.ToString("g")</td>
-                    <td>@(item.Cliente ?? "Público general")</td>
+                    <td>@(item.Cliente?.Nombre ?? "Público general")</td>
                     <td>@item.Total.ToString("C")</td>
                     <td>
                         <span class="badge @(item.Estado == "Completada" ? "badge-success" : "badge-danger")">

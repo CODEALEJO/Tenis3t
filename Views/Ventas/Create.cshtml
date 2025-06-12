@@ -8,11 +8,11 @@
 
 <form asp-action="Create" id="ventaForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    
+
     <div class="form-group">
-        <label asp-for="Cliente" class="control-label"></label>
-        <input asp-for="Cliente" class="form-control" />
-        <span asp-validation-for="Cliente" class="text-danger"></span>
+        <label asp-for="NombreCliente" class="control-label">Cliente</label>
+        <input asp-for="NombreCliente" class="form-control" />
+        <span asp-validation-for="NombreCliente" class="text-danger"></span>
     </div>
 
     <h4>Productos</h4>
@@ -23,8 +23,8 @@
                 <div class="row">
                     <div class="col-md-5">
                         <label class="control-label">Producto</label>
-                        <select asp-for="@Model.Detalles[i].TallaInventarioId" class="form-control producto-select" 
-                                data-index="@i" onchange="actualizarDisponibilidad(this)">
+                        <select asp-for="@Model.Detalles[i].TallaInventarioId" class="form-control producto-select"
+                            data-index="@i" onchange="actualizarDisponibilidad(this)">
                             <option value="">Seleccione un producto</option>
                             @foreach (var item in ViewBag.InventarioDisponible)
                             {
@@ -32,11 +32,8 @@
                                 {
                                     if (talla.Cantidad > 0)
                                     {
-                                        <option value="@talla.Id" 
-                                                data-nombre="@item.Nombre" 
-                                                data-talla="@talla.Talla" 
-                                                data-precio="@item.PrecioVenta" 
-                                                data-disponible="@talla.Cantidad">
+                                        <option value="@talla.Id" data-nombre="@item.Nombre" data-talla="@talla.Talla"
+                                            data-precio="@item.PrecioVenta" data-disponible="@talla.Cantidad">
                                             @item.Nombre - Talla: @talla.Talla (Disponible: @talla.Cantidad)
                                         </option>
                                     }
@@ -59,7 +56,8 @@
                         <input type="text" class="form-control subtotal-input" readonly value="0" />
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(this)">Eliminar</button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                            onclick="eliminarDetalle(this)">Eliminar</button>
                     </div>
                 </div>
             </div>
@@ -81,56 +79,61 @@
 </form>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
     <script>
         // Función para agregar un nuevo detalle
         function agregarDetalle() {
             var index = $('#detallesContainer .detalle-item').length;
             var html = `
-                <div class="detalle-item mb-3 p-3 border">
-                    <div class="row">
-                        <div class="col-md-5">
-                            <label class="control-label">Producto</label>
-                            <select name="Detalles[${index}].TallaInventarioId" class="form-control producto-select" 
-                                    data-index="${index}" onchange="actualizarDisponibilidad(this)">
-                                <option value="">Seleccione un producto</option>
-                                @foreach (var item in ViewBag.InventarioDisponible)
-                                {
-                                    foreach (var talla in item.Tallas)
-                                    {
-                                        if (talla.Cantidad > 0)
-                                        {
-                                            <option value="@talla.Id" 
-                                                    data-nombre="@item.Nombre" 
-                                                    data-talla="@talla.Talla" 
-                                                    data-precio="@item.PrecioVenta" 
-                                                    data-disponible="@talla.Cantidad">
-                                                @item.Nombre - Talla: @talla.Talla (Disponible: @talla.Cantidad)
-                                            </option>
-                                        }
-                                    }
-                                }
-                            </select>
-                            <input type="hidden" name="Detalles[${index}].NombreProducto" class="nombre-producto" />
-                            <input type="hidden" name="Detalles[${index}].Talla" class="talla-producto" />
-                            <input type="hidden" name="Detalles[${index}].PrecioUnitario" class="precio-producto" />
-                            <input type="hidden" name="Detalles[${index}].Disponible" class="disponible-producto" />
+                        <div class="detalle-item mb-3 p-3 border">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <label class="control-label">Producto</label>
+                                    <select name="Detalles[${index}].TallaInventarioId" class="form-control producto-select" 
+                                            data-index="${index}" onchange="actualizarDisponibilidad(this)">
+                                        <option value="">Seleccione un producto</option>
+                                       @if (ViewBag.InventarioDisponible != null)
+    {
+            @foreach (var item in ViewBag.InventarioDisponible as List<Inventario>)
+            {
+                    @if (item.Tallas != null)
+                    {
+                            @foreach (var talla in item.Tallas.Where(t => t.Cantidad > 0))
+                            {
+                                    <option value="@talla.Id" 
+                                            data-nombre="@item.Nombre" 
+                                            data-talla="@talla.Talla"
+                                            data-precio="@item.PrecioVenta" 
+                                            data-disponible="@talla.Cantidad">
+                                        @item.Nombre - Talla: @talla.Talla (Disponible: @talla.Cantidad)
+                                    </option>
+                            }
+                    }
+            }
+    }
+                                    </select>
+                                    <input type="hidden" name="Detalles[${index}].NombreProducto" class="nombre-producto" />
+                                    <input type="hidden" name="Detalles[${index}].Talla" class="talla-producto" />
+                                    <input type="hidden" name="Detalles[${index}].PrecioUnitario" class="precio-producto" />
+                                    <input type="hidden" name="Detalles[${index}].Disponible" class="disponible-producto" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="control-label">Cantidad</label>
+                                    <input name="Detalles[${index}].Cantidad" class="form-control cantidad-input" min="1" value="1" />
+                                    <small class="text-muted disponible-text">Disponible: <span>0</span></small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="control-label">Subtotal</label>
+                                    <input type="text" class="form-control subtotal-input" readonly value="0" />
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(this)">Eliminar</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="control-label">Cantidad</label>
-                            <input name="Detalles[${index}].Cantidad" class="form-control cantidad-input" min="1" value="1" />
-                            <small class="text-muted disponible-text">Disponible: <span>0</span></small>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="control-label">Subtotal</label>
-                            <input type="text" class="form-control subtotal-input" readonly value="0" />
-                        </div>
-                        <div class="col-md-1 d-flex align-items-end">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(this)">Eliminar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
+                    `;
             $('#detallesContainer').append(html);
         }
 
@@ -147,8 +150,8 @@
 
         // Función para actualizar los números de índice después de eliminar
         function recalcularNumerosIndex() {
-            $('#detallesContainer .detalle-item').each(function(index) {
-                $(this).find('select, input').each(function() {
+            $('#detallesContainer .detalle-item').each(function (index) {
+                $(this).find('select, input').each(function () {
                     var name = $(this).attr('name');
                     if (name) {
                         name = name.replace(/\[\d+\]/, `[${index}]`);
@@ -190,7 +193,7 @@
         // Función para calcular el total
         function calcularTotal() {
             var total = 0;
-            $('.detalle-item').each(function() {
+            $('.detalle-item').each(function () {
                 var precio = parseFloat($(this).find('.precio-producto').val()) || 0;
                 var cantidad = parseInt($(this).find('.cantidad-input').val()) || 0;
                 total += precio * cantidad;
@@ -199,9 +202,9 @@
         }
 
         // Eventos
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Calcular subtotal cuando cambia la cantidad
-            $(document).on('input', '.cantidad-input', function() {
+            $(document).on('input', '.cantidad-input', function () {
                 var container = $(this).closest('.detalle-item');
                 var precio = parseFloat(container.find('.precio-producto').val()) || 0;
                 var cantidad = parseInt($(this).val()) || 0;
@@ -223,7 +226,7 @@
                 agregarDetalle();
             } else {
                 // Actualizar los detalles existentes al cargar
-                $('.producto-select').each(function() {
+                $('.producto-select').each(function () {
                     if ($(this).val()) {
                         actualizarDisponibilidad(this);
                     }
