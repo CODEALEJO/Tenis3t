@@ -11,8 +11,6 @@ namespace Tenis3t.Models
         [Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a 0")]
         public decimal Monto { get; set; }
 
-        public string? Referencia { get; set; }
-
         // Para mostrar en la vista
         public string? NombreMetodo { get; set; }
     }

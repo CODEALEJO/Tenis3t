@@ -13,5 +13,6 @@ namespace Tenis3t.Models
         [Required]
         [StringLength(50)]
         public string Nombre { get; set; } // Efectivo, Transferencia, Datafono, Crédito
+        public bool RequiereReferencia { get; set; } // Nuevo campo
     }
 }
