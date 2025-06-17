@@ -4,6 +4,7 @@ using Tenis3t.Data;
 using Tenis3t.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using System.Text.Json;
 
 namespace Tenis3t.Controllers
 {
@@ -123,14 +124,7 @@ namespace Tenis3t.Controllers
                 FechaPrestamo = DateTime.Now
             };
 
-            await LoadViewBagData(usuarioActual.Id, model.TipoPrestamo);
-
-            // Cargar lista de otros usuarios (locales)
-            ViewBag.Usuarios = await _userManager.Users
-                .Where(u => u.Id != usuarioActual.Id)
-                .Select(u => u.UserName)
-                .ToListAsync();
-
+            await CargarDatosVista(usuarioActual.Id, model.TipoPrestamo);
             return View(model);
         }
 
@@ -163,107 +157,143 @@ namespace Tenis3t.Controllers
             }
         }
 
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(Prestamo prestamo)
-{
-    _logger.LogInformation("Iniciando creación de préstamo...");
-    
-    try
-    {
-        var usuarioActual = await _userManager.GetUserAsync(User);
-        if (usuarioActual == null) return Challenge();
-
-        // Validación básica
-        if (prestamo.TipoPrestamo != "Realizado" && prestamo.TipoPrestamo != "Recibido")
+            [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Prestamo prestamo, int productoId)
         {
-            TempData["ErrorMessage"] = "Tipo de préstamo no válido";
-            return RedirectToAction(nameof(Index));
+            _logger.LogInformation("Iniciando creación de préstamo...");
+
+            try
+            {
+                var usuarioActual = await _userManager.GetUserAsync(User);
+                if (usuarioActual == null) return Challenge();
+
+                // Validación básica del tipo de préstamo
+                if (prestamo.TipoPrestamo != "Realizado" && prestamo.TipoPrestamo != "Recibido")
+                {
+                    TempData["ErrorMessage"] = "Tipo de préstamo no válido";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Validar que se haya seleccionado un producto y una talla
+                if (productoId == 0)
+                {
+                    ModelState.AddModelError("", "Debe seleccionar un producto");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                if (prestamo.TallaInventarioId == 0)
+                {
+                    ModelState.AddModelError("TallaInventarioId", "Debe seleccionar una talla");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                // Buscar el usuario receptor
+                var usuarioReceptor = await _userManager.Users
+                    .FirstOrDefaultAsync(u => u.UserName == prestamo.LocalPersona);
+
+                if (usuarioReceptor == null)
+                {
+                    ModelState.AddModelError("LocalPersona", "Usuario no encontrado");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                // Asignar valores automáticos
+                prestamo.UsuarioPrestamistaId = usuarioActual.Id;
+                prestamo.UsuarioReceptorId = usuarioReceptor.Id;
+                prestamo.FechaPrestamo = DateTime.Now;
+                prestamo.Estado = "Prestado";
+
+                // Limpiar validación de propiedades de navegación
+                ModelState.Remove("UsuarioPrestamista");
+                ModelState.Remove("UsuarioReceptor");
+                ModelState.Remove("TallaInventario");
+                ModelState.Remove("Inventario");
+
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Modelo no válido. Errores: " +
+                        string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                // Verificar stock
+                var talla = await _context.TallasInventario
+                    .Include(t => t.Inventario)
+                    .FirstOrDefaultAsync(t => t.Id == prestamo.TallaInventarioId && 
+                                             t.Inventario.Id == productoId);
+
+                if (talla == null)
+                {
+                    ModelState.AddModelError("", "La combinación de producto y talla seleccionada no existe");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                if (talla.Inventario.UsuarioId != usuarioActual.Id)
+                {
+                    ModelState.AddModelError("", "No tienes permisos sobre este producto");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                if (talla.Cantidad < prestamo.Cantidad)
+                {
+                    ModelState.AddModelError("Cantidad", $"Stock insuficiente. Disponible: {talla.Cantidad}");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+
+                _logger.LogInformation("Datos del préstamo a crear: " + JsonSerializer.Serialize(prestamo));
+                _logger.LogInformation("Iniciando transacción...");
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Actualizar stock
+                    talla.Cantidad -= prestamo.Cantidad;
+                    _context.Update(talla);
+
+                    // Crear préstamo
+                    _context.Add(prestamo);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation($"Préstamo creado exitosamente. ID: {prestamo.Id}");
+                    TempData["SuccessMessage"] = "¡Préstamo registrado exitosamente!";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error al guardar en la base de datos");
+                    ModelState.AddModelError("", "Error al guardar el préstamo en la base de datos");
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error en transacción de préstamo");
+                    ModelState.AddModelError("", "Error al procesar el préstamo: " + ex.Message);
+                    await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
+                    return View(prestamo);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general en Create Prestamo");
+                TempData["ErrorMessage"] = "Error inesperado. Intente nuevamente.";
+                return RedirectToAction(nameof(Create), new { tipo = prestamo?.TipoPrestamo?.ToLower() ?? "realizados" });
+            }
         }
 
-        _logger.LogInformation($"Validando receptor: {prestamo.LocalPersona}");
-        var usuarioReceptor = await _userManager.FindByNameAsync(prestamo.LocalPersona);
-
-        if (usuarioReceptor == null)
-        {
-            ModelState.AddModelError("LocalPersona", "El local/persona no existe");
-            await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
-            return View(prestamo);
-        }
-
-        // Asignar valores automáticos ANTES de la validación
-        prestamo.UsuarioPrestamistaId = usuarioActual.Id;
-        prestamo.UsuarioReceptorId = usuarioReceptor.Id;
-        prestamo.FechaPrestamo = DateTime.Now;
-        prestamo.Estado = "Prestado";
-
-        // Limpiar validación de propiedades de navegación
-        ModelState.Remove("UsuarioPrestamista");
-        ModelState.Remove("UsuarioReceptor");
-        ModelState.Remove("TallaInventario");
-        ModelState.Remove("Inventario");
-
-        if (!ModelState.IsValid)
-        {
-            _logger.LogWarning("Modelo no válido. Errores: " + 
-                string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-            await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
-            return View(prestamo);
-        }
-
-        _logger.LogInformation($"Verificando stock para talla ID: {prestamo.TallaInventarioId}");
-        var talla = await _context.TallasInventario
-            .Include(t => t.Inventario)
-            .FirstOrDefaultAsync(t => t.Id == prestamo.TallaInventarioId);
-
-        if (talla == null || talla.Inventario.UsuarioId != usuarioActual.Id)
-        {
-            ModelState.AddModelError("", "Talla no válida o sin permisos");
-            await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
-            return View(prestamo);
-        }
-
-        if (talla.Cantidad < prestamo.Cantidad)
-        {
-            ModelState.AddModelError("Cantidad", $"Stock insuficiente. Disponible: {talla.Cantidad}");
-            await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
-            return View(prestamo);
-        }
-
-        _logger.LogInformation("Iniciando transacción...");
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
-        {
-            // Actualizar stock
-            talla.Cantidad -= prestamo.Cantidad;
-            _context.Update(talla);
-
-            // Crear préstamo
-            _context.Add(prestamo);
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation("Préstamo creado exitosamente");
-            TempData["SuccessMessage"] = "¡Préstamo registrado exitosamente!";
-            return RedirectToAction(nameof(Index));
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error en transacción de préstamo");
-            ModelState.AddModelError("", "Error al guardar el préstamo: " + ex.Message);
-            await CargarDatosVista(usuarioActual.Id, prestamo.TipoPrestamo);
-            return View(prestamo);
-        }
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error general en Create Prestamo");
-        TempData["ErrorMessage"] = "Error inesperado. Intente nuevamente.";
-        return RedirectToAction(nameof(Create), new { tipo = prestamo?.TipoPrestamo?.ToLower() ?? "realizados" });
-    }
-}
         private async Task CargarDatosVista(string usuarioId, string tipoPrestamo)
         {
             ViewBag.Productos = await _context.Inventarios

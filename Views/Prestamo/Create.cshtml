@@ -4,74 +4,80 @@
 }
 
 <div class="container mt-4">
-    <h2>@ViewData["Title"]</h2>
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">@ViewData["Title"]</h2>
         </div>
-    }
+        
+        <div class="card-body">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
 
-    <hr />
-    <div class="row">
-        <div class="col-md-6">
             <form asp-action="Create" id="prestamoForm" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
                 <input type="hidden" asp-for="TipoPrestamo" />
+                <input type="hidden" id="productoId" name="productoId" />
                 
-                <div class="form-group mb-3">
-                    <label class="control-label">Producto</label>
-                    <select id="productoSelect" class="form-select" 
-                            asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))" required>
-                        <option value="">Seleccione un producto</option>
-                    </select>
-                    <span class="text-danger" id="productoValidation"></span>
-                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Producto</label>
+                        <select id="productoSelect" class="form-select" 
+                                asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))" required>
+                            <option value="">Seleccione un producto</option>
+                        </select>
+                        <span class="text-danger small" id="productoValidation"></span>
+                    </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="TallaInventarioId" class="control-label">Talla</label>
-                    <select asp-for="TallaInventarioId" class="form-select" id="tallaSelect" required>
-                        <option value="">Seleccione una talla</option>
-                    </select>
-                    <span asp-validation-for="TallaInventarioId" class="text-danger"></span>
-                </div>
+                    <div class="col-md-6">
+                        <label asp-for="TallaInventarioId" class="form-label fw-bold">Talla</label>
+                        <select asp-for="TallaInventarioId" class="form-select" id="tallaSelect" required>
+                            <option value="">Seleccione una talla</option>
+                        </select>
+                        <span asp-validation-for="TallaInventarioId" class="text-danger small"></span>
+                    </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="LocalPersona" class="control-label">
-                        @(Model.TipoPrestamo == "Realizado" ? "Local/Persona que recibió" : "Local/Persona que prestó")
-                    </label>
-                    <input asp-for="LocalPersona" class="form-control" list="usuariosList" required />
-                    <datalist id="usuariosList">
-                        @foreach (var usuario in ViewBag.Usuarios)
-                        {
-                            <option value="@usuario">@usuario</option>
-                        }
-                    </datalist>
-                    <span asp-validation-for="LocalPersona" class="text-danger"></span>
-                </div>
+                    <div class="col-md-6">
+                        <label asp-for="LocalPersona" class="form-label fw-bold">
+                            @(Model.TipoPrestamo == "Realizado" ? "Local/Persona que recibió" : "Local/Persona que prestó")
+                        </label>
+                        <input asp-for="LocalPersona" class="form-control" list="usuariosList" required />
+                        <datalist id="usuariosList">
+                            @foreach (var usuario in ViewBag.Usuarios)
+                            {
+                                <option value="@usuario">@usuario</option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="LocalPersona" class="text-danger small"></span>
+                    </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="Cantidad" class="control-label"></label>
-                    <input asp-for="Cantidad" class="form-control" min="1" required />
-                    <span asp-validation-for="Cantidad" class="text-danger"></span>
-                </div>
+                    <div class="col-md-6">
+                        <label asp-for="Cantidad" class="form-label fw-bold"></label>
+                        <input asp-for="Cantidad" class="form-control" min="1" required />
+                        <span asp-validation-for="Cantidad" class="text-danger small"></span>
+                    </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="FechaDevolucionEstimada" class="control-label">Fecha Devolución Estimada</label>
-                    <input asp-for="FechaDevolucionEstimada" class="form-control" type="date"
-                           min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
-                    <span asp-validation-for="FechaDevolucionEstimada" class="text-danger"></span>
-                </div>
+                    <div class="col-md-6">
+                        <label asp-for="FechaDevolucionEstimada" class="form-label fw-bold">Fecha Devolución Estimada</label>
+                        <input asp-for="FechaDevolucionEstimada" class="form-control" type="date"
+                               min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                        <span asp-validation-for="FechaDevolucionEstimada" class="text-danger small"></span>
+                    </div>
 
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Registrar Préstamo
-                    </button>
-                    <a asp-action="Index" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Volver
-                    </a>
+                    <div class="col-12 mt-3">
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary me-md-2">
+                                <i class="bi bi-save"></i> Registrar Préstamo
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -99,7 +105,7 @@
                             });
                         })
                         .fail(function () {
-                            alert('Error al cargar tallas');
+                            $('#productoValidation').text('Error al cargar tallas');
                         });
                 } else {
                     $('#tallaSelect').empty();
@@ -107,13 +113,20 @@
                 }
             });
 
-            // Validación personalizada antes de enviar
+            // Validación antes de enviar
             $('#prestamoForm').submit(function(e) {
                 if ($('#productoSelect').val() === '') {
                     $('#productoValidation').text('Debe seleccionar un producto');
                     e.preventDefault();
                     return false;
                 }
+                
+                if ($('#tallaSelect').val() === '') {
+                    $('span[data-valmsg-for="TallaInventarioId"]').text('Debe seleccionar una talla');
+                    e.preventDefault();
+                    return false;
+                }
+                
                 return true;
             });
         });

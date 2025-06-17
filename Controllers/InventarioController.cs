@@ -25,7 +25,7 @@ namespace Tenis3t.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index(string nombre = null)
+        public async Task<IActionResult> Index(string nombre = null, string genero = null)
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
 
@@ -33,12 +33,40 @@ namespace Tenis3t.Controllers
                 .Include(i => i.Tallas)
                 .Where(i => i.UsuarioId == usuarioActual.Id);
 
+            // Aplicar filtro por nombre si existe
             if (!string.IsNullOrEmpty(nombre))
             {
                 inventarios = inventarios.Where(i => i.Nombre.Contains(nombre));
             }
 
+            // Aplicar filtro por género si existe y no es "todos"
+            if (!string.IsNullOrEmpty(genero) && genero != "todos")
+            {
+                inventarios = inventarios.Where(i => i.Genero == genero);
+            }
+
+            // Pasar los filtros actuales a la vista
+            ViewBag.FiltroNombre = nombre;
+            ViewBag.FiltroGenero = genero;
+
             return View(await inventarios.ToListAsync());
+        }
+
+         // Nueva acción para imprimir
+        public async Task<IActionResult> Imprimir(int id)
+        {
+            var usuarioActualId = _userManager.GetUserId(User);
+            var inventario = await _context.Inventarios
+                .Include(i => i.Tallas)
+                .FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioActualId);
+
+            if (inventario == null)
+            {
+                return NotFound();
+            }
+
+            // Configurar la vista para impresión
+            return View("ImprimirProducto", inventario);
         }
 
         [HttpGet]

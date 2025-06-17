@@ -1,0 +1,141 @@
+@model Tenis3t.Models.Inventario
+
+@{
+    ViewData["Title"] = "Imprimir Producto";
+    Layout = null; // Elimina el layout para la impresión
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Tenis3t</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .document-title {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .product-info {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .sizes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .sizes-table th, .sizes-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .sizes-table th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: right;
+            font-size: 12px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        @@media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">Entrada de productos</div>
+        <div class="document-title">Ficha de Producto</div>
+        <div>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
+    </div>
+
+    <div class="product-info">
+        <div class="info-row">
+            <div class="info-label">Producto:</div>
+            <div>@Model.Nombre</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Género:</div>
+            <div>@(Model.Genero == "hombre" ? "Hombre" : "Dama")</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Stock Total:</div>
+            <div>@Model.Cantidad unidades</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Precio Venta:</div>
+            <div>$@Model.PrecioVentaFormateado</div>
+        </div>
+    </div>
+
+    @if (Model.Tallas != null && Model.Tallas.Any())
+    {
+        <h3>Stock por Tallas</h3>
+        <table class="sizes-table">
+            <thead>
+                <tr>
+                    <th>Talla</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var talla in Model.Tallas.OrderBy(t => t.Talla))
+                {
+                    <tr>
+                        <td>@talla.Talla</td>
+                        <td>@talla.Cantidad unidades</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="footer">
+        <div>Documento generado el @DateTime.Now.ToString("dd/MM/yyyy")</div>
+        <div class="no-print">
+            <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
+            <button onclick="window.close()" class="btn btn-secondary">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Auto-imprimir al cargar (opcional)
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

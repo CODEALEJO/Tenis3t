@@ -18,14 +18,41 @@
     }
 
     <!-- Filtros de búsqueda -->
+    <!-- Filtros de búsqueda -->
     <div class="card mb-4 mx-auto" style="max-width: 1000px;">
         <div class="card-body">
             <form method="get" asp-action="Index" class="row g-3 justify-content-center align-items-center">
-                <div class="col-md-8">
+                <div class="col-md-5">
                     <label for="nombre" class="form-label">Buscar por nombre:</label>
                     <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto"
                         value="@Context.Request.Query["nombre"]" />
                 </div>
+
+                <div class="col-md-3">
+                    <label for="genero" class="form-label">Filtrar por género:</label>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button"
+                            id="generoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            @(string.IsNullOrEmpty(Context.Request.Query["genero"]) || Context.Request.Query["genero"]
+                                                        == "todos"
+                                                        ? "Todos"
+                                                        : Context.Request.Query["genero"] == "hombre" ? "Hombre" : "Dama")
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="generoDropdown">
+                            <li><a class="dropdown-item"
+                                    href="@Url.Action("Index", new { nombre = Context.Request.Query["nombre"], genero = "todos" })">Todos</a>
+                            </li>
+                            <li><a class="dropdown-item"
+                                    href="@Url.Action("Index", new { nombre = Context.Request.Query["nombre"], genero = "hombre" })">Hombre</a>
+                            </li>
+                            <li><a class="dropdown-item"
+                                    href="@Url.Action("Index", new { nombre = Context.Request.Query["nombre"], genero = "dama" })">Dama</a>
+                            </li>
+                        </ul>
+                        <input type="hidden" name="genero" id="genero" value="@Context.Request.Query["genero"]" />
+                    </div>
+                </div>
+
                 <div class="col-md-4 d-flex align-items-end">
                     <div class="d-flex flex-nowrap gap-2">
                         <button type="submit" class="btn btn-primary">
@@ -103,7 +130,8 @@
                             <a asp-action="Delete" asp-route-id="@inventario.Id" class="btn btn-danger btn-sm me-2">
                                 <i class="bi bi-trash"></i> Eliminar
                             </a>
-                            <a asp-action="" asp-route-id="@inventario.Id" class="btn btn-primary btn-sm me-2">
+                            <a asp-action="Imprimir" asp-route-id="@inventario.Id" target="_blank"
+                                class="btn btn-primary btn-sm me-2">
                                 <i class="bi bi-receipt-cutoff"></i> Imprimir
                             </a>
                         </div>
@@ -134,6 +162,15 @@
                 this.timer = setTimeout(function () {
                     handleNombreChange();
                 }, 500);
+            });
+            // Actualizar el campo oculto cuando se selecciona un género
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const genero = this.getAttribute('href').split('genero=')[1];
+                    document.getElementById('genero').value = genero;
+                    window.location.href = this.getAttribute('href');
+                });
             });
         });
     </script>

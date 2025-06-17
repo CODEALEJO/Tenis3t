@@ -29,8 +29,13 @@ namespace Tenis3t.Controllers
             _logger = logger;
         }
 
-        // GET: Ventas con búsqueda
-        public async Task<IActionResult> Index(string nombreCliente = null)
+        // GET: Ventas con búsqueda y filtros avanzados
+        public async Task<IActionResult> Index(
+            string nombreCliente = null,
+            string fechaFiltro = null,
+            int? mesFiltro = null,
+            int? anioFiltro = null,
+            string tipoFiltro = "dia")
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
             if (usuarioActual == null)
@@ -38,6 +43,7 @@ namespace Tenis3t.Controllers
                 return Unauthorized();
             }
 
+            // Consulta base con includes
             var query = _context.Ventas
                 .Include(v => v.UsuarioVendedor)
                 .Include(v => v.Cliente)
@@ -47,12 +53,73 @@ namespace Tenis3t.Controllers
                 .Include(v => v.Pagos)
                     .ThenInclude(p => p.MetodoPago)
                 .Where(v => v.UsuarioVendedorId == usuarioActual.Id)
-                .OrderByDescending(v => v.FechaVenta);
+                .AsQueryable();
 
-            var ventas = await query.ToListAsync();
+            // Filtro por nombre de cliente
+            if (!string.IsNullOrEmpty(nombreCliente))
+            {
+                query = query.Where(v => v.Cliente != null && v.Cliente.Nombre.Contains(nombreCliente));
+            }
+
+            // Aplicar filtros por fecha según el tipo seleccionado
+            switch (tipoFiltro.ToLower())
+            {
+                case "dia":
+                    if (!string.IsNullOrEmpty(fechaFiltro) && DateTime.TryParse(fechaFiltro, out var fecha))
+                    {
+                        var fechaInicio = fecha.Date;
+                        var fechaFin = fecha.Date.AddDays(1).AddTicks(-1);
+                        query = query.Where(v => v.FechaVenta >= fechaInicio && v.FechaVenta <= fechaFin);
+                    }
+                    break;
+
+                case "mes":
+                    if (mesFiltro.HasValue && mesFiltro > 0 && mesFiltro <= 12 && anioFiltro.HasValue)
+                    {
+                        var primerDiaMes = new DateTime(anioFiltro.Value, mesFiltro.Value, 1);
+                        var ultimoDiaMes = primerDiaMes.AddMonths(1).AddDays(-1);
+                        query = query.Where(v => v.FechaVenta >= primerDiaMes && v.FechaVenta <= ultimoDiaMes);
+                    }
+                    break;
+
+                case "rango":
+                    if (!string.IsNullOrEmpty(fechaFiltro))
+                    {
+                        var fechas = fechaFiltro.Split(" a ");
+                        if (fechas.Length == 2 && 
+                            DateTime.TryParse(fechas[0], out var inicio) && 
+                            DateTime.TryParse(fechas[1], out var fin))
+                        {
+                            var fechaInicio = inicio.Date;
+                            var fechaFin = fin.Date.AddDays(1).AddTicks(-1);
+                            query = query.Where(v => v.FechaVenta >= fechaInicio && v.FechaVenta <= fechaFin);
+                        }
+                    }
+                    break;
+            }
+
+            // Ordenar y ejecutar la consulta
+            var ventas = await query.OrderByDescending(v => v.FechaVenta).ToListAsync();
+
+            // Obtener años disponibles para el dropdown
+            var añosDisponibles = await _context.Ventas
+                .Where(v => v.UsuarioVendedorId == usuarioActual.Id)
+                .Select(v => v.FechaVenta.Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToListAsync();
+
+            // Pasar datos a la vista
+            ViewBag.NombreCliente = nombreCliente;
+            ViewBag.FechaFiltro = fechaFiltro;
+            ViewBag.MesFiltro = mesFiltro;
+            ViewBag.AnioFiltro = anioFiltro;
+            ViewBag.TipoFiltro = tipoFiltro;
+            ViewBag.AñosDisponibles = añosDisponibles;
+
             return View(ventas);
         }
-
+    
         // GET: Ventas/Create (Paso 1: Selección de productos)
         public async Task<IActionResult> Create()
         {
