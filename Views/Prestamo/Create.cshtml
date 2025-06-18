@@ -1,164 +1,80 @@
-@model Tenis3t.Models.Prestamo
-@using Tenis3t.Models
-
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                <li>@error.ErrorMessage</li>
-            }
-        </ul>
-    </div>
-}
-
+@model Tenis3t.Models.DTOs.CrearPrestamoDto
 @{
-    ViewData["Title"] = "Nuevo Préstamo";
+    ViewData["Title"] = "Crear Préstamo";
 }
 
-<h1>Nuevo Préstamo</h1>
+<div class="container">
+    <h1>Crear Préstamo</h1>
 
-<hr />
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Create" id="prestamoForm">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            
-            <!-- Campo oculto para el ID del producto -->
-            <input type="hidden" asp-for="TallaInventario.InventarioId" id="inventarioId" />
-            
-            <div class="form-group">
-                <label for="productoSelect" class="control-label">Producto</label>
-                <select id="productoSelect" name="productoSelect" class="form-control" required>
-                    <option value="">-- Seleccionar Producto --</option>
-                    @if (ViewBag.Productos != null)
-                    {
-                        @foreach (var producto in ViewBag.Productos as List<ProductoSelectViewModel>)
-                        {
-                            <option value="@producto.Id" data-nombre="@producto.Nombre">@producto.Nombre</option>
-                        }
-                    }
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="TallaInventarioId" class="control-label">Talla</label>
-                <select asp-for="TallaInventarioId" class="form-control" id="tallaSelect" name="TallaInventarioId" required>
-                    <option value="">-- Seleccione un producto primero --</option>
-                </select>
-                <span asp-validation-for="TallaInventarioId" class="text-danger"></span>
-                <small id="cantidadDisponible" class="form-text text-muted"></small>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="Cantidad" class="control-label"></label>
-                <input asp-for="Cantidad" class="form-control" min="1" required />
-                <span asp-validation-for="Cantidad" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="UsuarioReceptorId" class="control-label">Prestar a</label>
-                <select asp-for="UsuarioReceptorId" class="form-control" required>
-                    <option value="">-- Seleccionar Usuario --</option>
-                    @if (ViewBag.Usuarios != null)
-                    {
-                        @foreach (var usuario in ViewBag.Usuarios as List<UsuarioSelectViewModel>)
-                        {
-                            <option value="@usuario.Id">@usuario.UserName</option>
-                        }
-                    }
-                </select>
-                <span asp-validation-for="UsuarioReceptorId" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="FechaDevolucionEstimada" class="control-label"></label>
-                <input asp-for="FechaDevolucionEstimada" class="form-control" type="date" 
-                       min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" required />
-                <span asp-validation-for="FechaDevolucionEstimada" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="LocalPersona" class="control-label"></label>
-                <input asp-for="LocalPersona" class="form-control" required />
-                <span asp-validation-for="LocalPersona" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <label asp-for="TipoPrestamo" class="control-label">Tipo de Préstamo</label>
-                <select asp-for="TipoPrestamo" class="form-control" required>
-                    <option value="Local">Local</option>
-                    <option value="Persona">Persona</option>
-                </select>
-                <span asp-validation-for="TipoPrestamo" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <input type="submit" value="Registrar Préstamo" class="btn btn-primary" id="btnSubmit" />
-                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
-    </div>
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        
+        <div class="form-group">
+            <label>Usuario Receptor</label>
+            <select asp-for="UsuarioReceptorId" class="form-control" 
+                    asp-items="@(new SelectList(ViewBag.Usuarios, "Id", "UserName"))">
+                <option value="">Seleccione un usuario</option>
+            </select>
+            <span asp-validation-for="UsuarioReceptorId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Producto</label>
+            <select id="productoSelect" class="form-control" 
+                    asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))">
+                <option value="">Seleccione un producto</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Talla</label>
+            <select asp-for="TallaInventarioId" class="form-control" id="tallaSelect" disabled>
+                <option value="">Seleccione una talla</option>
+            </select>
+            <span asp-validation-for="TallaInventarioId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Cantidad</label>
+            <input asp-for="Cantidad" class="form-control" id="cantidadInput" min="1" />
+            <span asp-validation-for="Cantidad" class="text-danger"></span>
+            <small id="cantidadDisponible" class="text-muted"></small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Crear Préstamo</button>
+    </form>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-    
     <script>
-        $(document).ready(function() {
+        $(function() {
+            // Cargar tallas al seleccionar producto
             $('#productoSelect').change(function() {
                 var productoId = $(this).val();
-                $('#inventarioId').val(productoId);
+                $('#tallaSelect').empty().append('<option value="">Cargando...</option>');
                 
                 if (productoId) {
-                    $.getJSON('@Url.Action("GetTallasByProducto", "Prestamo")', { productoId: productoId }, function(data) {
-                        var items = '<option value="">-- Seleccionar Talla --</option>';
-                        $.each(data, function(i, talla) {
-                            items += `<option value="${talla.id}" data-cantidad="${talla.cantidad}">${talla.talla} (Disponibles: ${talla.cantidad})</option>`;
+                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId }, function(data) {
+                        $('#tallaSelect').empty().append('<option value="">Seleccione talla</option>');
+                        $.each(data, function(i, item) {
+                            $('#tallaSelect').append(`<option value="${item.id}">${item.talla} (${item.cantidad})</option>`);
                         });
-                        $('#tallaSelect').html(items);
-                        $('#cantidadDisponible').text('');
-                    }).fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error("Error al cargar tallas:", textStatus, errorThrown);
-                        alert("Error al cargar las tallas disponibles");
+                        $('#tallaSelect').prop('disabled', false);
                     });
                 } else {
-                    $('#tallaSelect').html('<option value="">-- Seleccione un producto primero --</option>');
-                    $('#cantidadDisponible').text('');
-                }
-            });
-            
-            $('#tallaSelect').change(function() {
-                var tallaId = $(this).val();
-                if (tallaId) {
-                    var cantidadDisponible = $('#tallaSelect option:selected').data('cantidad');
-                    $('#cantidadDisponible').text(`Cantidad disponible: ${cantidadDisponible}`);
-                    $('#Cantidad').attr('max', cantidadDisponible);
-                } else {
-                    $('#cantidadDisponible').text('');
+                    $('#tallaSelect').empty().append('<option value="">Seleccione talla</option>').prop('disabled', true);
                 }
             });
 
-            $('#prestamoForm').submit(function(e) {
-                if ($('#tallaSelect').val() === "") {
-                    alert("Debe seleccionar una talla");
-                    e.preventDefault();
-                    return false;
+            // Mostrar cantidad disponible
+            $('#tallaSelect').change(function() {
+                var tallaId = $(this).val();
+                if (tallaId) {
+                    $.get('/Prestamo/GetCantidadDisponible', { tallaInventarioId: tallaId }, function(data) {
+                        $('#cantidadDisponible').text(`Disponibles: ${data.cantidad}`);
+                        $('#cantidadInput').attr('max', data.cantidad);
+                    });
                 }
-                
-                var cantidad = parseInt($('#Cantidad').val());
-                var disponible = parseInt($('#tallaSelect option:selected').data('cantidad'));
-                
-                if (cantidad > disponible) {
-                    alert(`No hay suficiente cantidad disponible. Solo quedan ${disponible} unidades`);
-                    e.preventDefault();
-                    return false;
-                }
-                
-                return true;
             });
         });
     </script>

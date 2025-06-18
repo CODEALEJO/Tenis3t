@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
 using System.Linq;
 using System.Threading.Tasks;
+using Tenis3t.Models.DTOs;
 
 namespace Tenis3t.Controllers
 {
@@ -63,138 +64,277 @@ namespace Tenis3t.Controllers
             return View(prestamos);
         }
 
-        // GET: Prestamo/Create
+             // GET: Prestamo/Create
         public async Task<IActionResult> Create()
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
-            // Obtener productos disponibles del inventario del usuario actual
-            var productos = await _context.Inventarios
-                .Where(i => i.UsuarioId == currentUser.Id)
-                .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
-                .ToListAsync();
-
+            await CargarDatosParaCrear(currentUser);
+            
+            // Verificar si hay productos disponibles
+            var productos = ViewBag.Productos as List<ProductoSelectViewModel>;
             if (productos == null || !productos.Any())
             {
                 TempData["ErrorMessage"] = "No tienes productos en tu inventario. Debes agregar productos primero.";
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Productos = productos;
-            ViewBag.Usuarios = await _userManager.Users
-                .Where(u => u.Id != currentUser.Id)
-                .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
-                .ToListAsync();
+            var dto = new CrearPrestamoDto
+            {
+                
+                Cantidad = 1
+            };
 
-            return View(new Prestamo());
+            return View(dto);
         }
 
         // POST: Prestamo/Create
-       [HttpPost]
+        [HttpPost]
 [ValidateAntiForgeryToken]
-public async Task<IActionResult> Create([Bind("Id,FechaPrestamo,FechaDevolucionEstimada,FechaDevolucionReal,Estado,Cantidad,TallaInventarioId,LocalPersona,TipoPrestamo,UsuarioReceptorId")] Prestamo prestamo)
+public async Task<IActionResult> Create(CrearPrestamoDto dto)
 {
     var currentUser = await _userManager.GetUserAsync(User);
-
-    // Asignar valores que no vienen del formulario
-    prestamo.UsuarioPrestamistaId = currentUser.Id;
-    prestamo.Estado = "Prestado";
-    prestamo.FechaPrestamo = DateTime.Now;
-
-    if (ModelState.IsValid)
+    
+    if (!ModelState.IsValid)
     {
-        try
-        {
-            // Validar fecha de devolución
-            if (prestamo.FechaDevolucionEstimada <= DateTime.Now)
-            {
-                ModelState.AddModelError("FechaDevolucionEstimada", "La fecha de devolución debe ser mayor a la fecha actual");
-                await LoadCreateViewData(currentUser);
-                return View(prestamo);
-            }
-
-            // Validar cantidad disponible
-            var tallaInventario = await _context.TallasInventario
-                .Include(t => t.Inventario)
-                .FirstOrDefaultAsync(ti => ti.Id == prestamo.TallaInventarioId);
-
-            if (tallaInventario == null)
-            {
-                ModelState.AddModelError("TallaInventarioId", "La talla seleccionada no existe");
-                await LoadCreateViewData(currentUser);
-                return View(prestamo);
-            }
-
-            if (tallaInventario.Cantidad < prestamo.Cantidad)
-            {
-                ModelState.AddModelError("Cantidad", $"No hay suficiente cantidad disponible. Solo quedan {tallaInventario.Cantidad} unidades");
-                await LoadCreateViewData(currentUser);
-                return View(prestamo);
-            }
-
-            // Actualizar inventario
-            tallaInventario.Cantidad -= prestamo.Cantidad;
-            _context.Update(tallaInventario);
-
-            _context.Add(prestamo);
-            await _context.SaveChangesAsync();
-            
-            TempData["SuccessMessage"] = "Préstamo registrado exitosamente";
-            return RedirectToAction(nameof(Index));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear préstamo");
-            ModelState.AddModelError("", "Ocurrió un error al registrar el préstamo: " + ex.Message);
-            await LoadCreateViewData(currentUser);
-            return View(prestamo);
-        }
+        await CargarDatosParaCrear(currentUser);
+        return View(dto);
     }
 
-    // Si llegamos aquí, algo falló
-    await LoadCreateViewData(currentUser);
-    return View(prestamo);
-}
+    try
+    {
+        // Validar disponibilidad
+        var talla = await _context.TallasInventario
+            .Include(t => t.Inventario)
+            .FirstOrDefaultAsync(t => t.Id == dto.TallaInventarioId);
 
-        // Actualizar también el método LoadCreateViewData
-        private async Task LoadCreateViewData(IdentityUser currentUser)
+        if (talla == null || talla.Inventario.UsuarioId != currentUser.Id)
         {
-            ViewBag.Productos = await _context.Inventarios
-                .Where(i => i.UsuarioId == currentUser.Id)
-                .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
-                .ToListAsync();
-
-            ViewBag.Usuarios = await _userManager.Users
-                .Where(u => u.Id != currentUser.Id)
-                .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
-                .ToListAsync();
+            ModelState.AddModelError("", "No tienes permiso para prestar este producto");
+            await CargarDatosParaCrear(currentUser);
+            return View(dto);
         }
 
-        // Método para obtener tallas de un producto (AJAX)
+        if (talla.Cantidad < dto.Cantidad)
+        {
+            ModelState.AddModelError("Cantidad", $"Solo hay {talla.Cantidad} unidades disponibles");
+            await CargarDatosParaCrear(currentUser);
+            return View(dto);
+        }
+
+        // Crear préstamo
+        var prestamo = new Prestamo
+        {
+            UsuarioPrestamistaId = currentUser.Id,
+            UsuarioReceptorId = dto.UsuarioReceptorId,
+            TallaInventarioId = dto.TallaInventarioId,
+            Cantidad = dto.Cantidad,
+            Estado = "Prestado"
+        };
+
+        // Actualizar inventario
+        talla.Cantidad -= dto.Cantidad;
+
+        _context.Add(prestamo);
+        _context.Update(talla);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Préstamo creado exitosamente";
+        return RedirectToAction(nameof(Index));
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error al crear préstamo");
+        ModelState.AddModelError("", "Error al crear el préstamo");
+        await CargarDatosParaCrear(currentUser);
+        return View(dto);
+    }
+}
+
+       
+
+        // Método privado para crear el préstamo en la base de datos
+        private async Task CrearPrestamoEnBaseDeDatos(CrearPrestamoDto dto, IdentityUser currentUser)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Obtener la talla de inventario
+                var tallaInventario = await _context.TallasInventario
+                    .FirstOrDefaultAsync(ti => ti.Id == dto.TallaInventarioId);
+
+                if (tallaInventario == null)
+                    throw new InvalidOperationException("Talla de inventario no encontrada");
+
+                // Crear el préstamo
+                var prestamo = new Prestamo
+                {
+                    UsuarioPrestamistaId = currentUser.Id,
+                    UsuarioReceptorId = dto.UsuarioReceptorId,
+                    TallaInventarioId = dto.TallaInventarioId,
+                    Cantidad = dto.Cantidad,
+                    Estado = "Prestado",
+                    FechaPrestamo = DateTime.Now,
+                    TipoPrestamo = "Persona",
+                    LocalPersona = "N/A"
+                };
+
+                // Actualizar inventario
+                tallaInventario.Cantidad -= dto.Cantidad;
+
+                // Guardar cambios
+                _context.Add(prestamo);
+                _context.Update(tallaInventario);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                _logger.LogInformation($"Préstamo creado exitosamente. ID: {prestamo.Id}");
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        // Método privado para cargar datos para la vista
+        private async Task CargarDatosParaCrear(IdentityUser currentUser)
+        {
+            try
+            {
+                var productos = await _context.Inventarios
+                    .Where(i => i.UsuarioId == currentUser.Id)
+                    .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
+                    .ToListAsync();
+
+                var usuarios = await _userManager.Users
+                    .Where(u => u.Id != currentUser.Id)
+                    .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
+                    .ToListAsync();
+
+                ViewBag.Productos = productos ?? new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = usuarios ?? new List<UsuarioSelectViewModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar datos para Create");
+                ViewBag.Productos = new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = new List<UsuarioSelectViewModel>();
+            }
+        }
+
+        // Método privado para loggear errores de validación
+        private void LogearErroresValidacion()
+        {
+            foreach (var state in ModelState)
+            {
+                if (state.Value.Errors.Count > 0)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        _logger.LogError($"Error en {state.Key}: {error.ErrorMessage}");
+                    }
+                }
+            }
+        }
+
+        // AJAX: Obtener tallas por producto
         [HttpGet]
         public async Task<IActionResult> GetTallasByProducto(int productoId)
         {
-            var tallas = await _context.TallasInventario
-                .Where(ti => ti.InventarioId == productoId && ti.Cantidad > 0)
-                .Select(ti => new { ti.Id, ti.Talla, ti.Cantidad })
-                .ToListAsync();
+            try
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null)
+                {
+                    return Json(new List<object>());
+                }
 
-            return Json(tallas);
+                var tallas = await _context.TallasInventario
+                    .Include(ti => ti.Inventario)
+                    .Where(ti => ti.InventarioId == productoId &&
+                                ti.Cantidad > 0 &&
+                                ti.Inventario.UsuarioId == currentUser.Id)
+                    .Select(ti => new { 
+                        id = ti.Id, 
+                        talla = ti.Talla, 
+                        cantidad = ti.Cantidad 
+                    })
+                    .ToListAsync();
+
+                return Json(tallas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en GetTallasByProducto");
+                return Json(new List<object>());
+            }
         }
 
-        // Método para obtener cantidad disponible (AJAX)
+        // AJAX: Obtener cantidad disponible
         [HttpGet]
         public async Task<IActionResult> GetCantidadDisponible(int tallaInventarioId)
         {
-            var talla = await _context.TallasInventario
-                .FirstOrDefaultAsync(ti => ti.Id == tallaInventarioId);
-
-            if (talla == null)
+            try
             {
-                return NotFound();
-            }
+                var talla = await _context.TallasInventario
+                    .FirstOrDefaultAsync(ti => ti.Id == tallaInventarioId);
 
-            return Json(new { cantidad = talla.Cantidad });
+                if (talla == null)
+                {
+                    return Json(new { cantidad = 0 });
+                }
+
+                return Json(new { cantidad = talla.Cantidad });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en GetCantidadDisponible");
+                return Json(new { cantidad = 0 });
+            }
         }
+
+
+
+        // Método de prueba para verificar que el controlador responde
+        [HttpGet]
+        public IActionResult Test()
+        {
+            _logger.LogInformation("Método Test llamado - el controlador responde correctamente");
+            return Json(new { mensaje = "Controlador funcionando", timestamp = DateTime.Now });
+        }
+
+        // Método auxiliar mejorado
+        private async Task LoadCreateViewData(IdentityUser currentUser)
+        {
+            try
+            {
+                var productos = await _context.Inventarios
+                    .Where(i => i.UsuarioId == currentUser.Id)
+                    .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
+                    .ToListAsync();
+
+                var usuarios = await _userManager.Users
+                    .Where(u => u.Id != currentUser.Id)
+                    .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
+                    .ToListAsync();
+
+                ViewBag.Productos = productos ?? new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = usuarios ?? new List<UsuarioSelectViewModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar datos para la vista Create");
+                ViewBag.Productos = new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = new List<UsuarioSelectViewModel>();
+            }
+        }
+
+        // Método para obtener tallas de un producto (AJAX)
+
     }
 }

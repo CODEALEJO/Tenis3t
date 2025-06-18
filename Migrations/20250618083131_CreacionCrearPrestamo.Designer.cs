@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenis3t.Data;
 
@@ -10,9 +11,11 @@ using Tenis3t.Data;
 namespace Tenis3t.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250618083131_CreacionCrearPrestamo")]
+    partial class CreacionCrearPrestamo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -356,29 +359,40 @@ namespace Tenis3t.Migrations
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("FechaDevolucionEstimada")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaDevolucionReal")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("FechaPrestamo")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("LocalPersona")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int>("TallaInventarioId")
                         .HasColumnType("int");
 
                     b.Property<string>("TipoPrestamo")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("UsuarioPrestamistaId")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(450)
+                        .HasColumnType("varchar(450)");
 
                     b.Property<string>("UsuarioReceptorId")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(450)
+                        .HasColumnType("varchar(450)");
 
                     b.HasKey("Id");
 
