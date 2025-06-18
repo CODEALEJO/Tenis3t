@@ -14,6 +14,7 @@ namespace Tenis3t.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<InventarioController> _logger;
+         private const string DeletePassword = "3T2025"; // Misma contraseña que en Ventas
 
         public InventarioController(
             ApplicationDbContext context,
@@ -100,10 +101,16 @@ namespace Tenis3t.Controllers
             return View();
         }
 
-        [HttpPost]
+          [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Inventario inventario, Dictionary<string, int> tallas)
+        public async Task<IActionResult> Create(Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
         {
+            if (claveSeguridad != DeletePassword)
+            {
+                TempData["ErrorMessage"] = "";
+                return RedirectToAction(nameof(Index));
+            }
+
             var usuarioActual = await _userManager.GetUserAsync(User);
             inventario.UsuarioId = usuarioActual.Id;
 
@@ -224,10 +231,15 @@ namespace Tenis3t.Controllers
             return View(inventario);
         }
 
-        [HttpPost]
+             [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas)
+        public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
         {
+            if (claveSeguridad != DeletePassword)
+            {
+                TempData["ErrorMessage"] = "";
+                return RedirectToAction(nameof(Index));
+            }
             var usuarioActualId = _userManager.GetUserId(User);
 
             if (id != inventario.Id)
@@ -343,10 +355,15 @@ namespace Tenis3t.Controllers
             return View(inventario);
         }
 
-        [HttpPost, ActionName("Delete")]
+            [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id, string claveSeguridad)
         {
+            if (claveSeguridad != DeletePassword)
+            {
+                TempData["ErrorMessage"] = "";
+                return RedirectToAction(nameof(Index));
+            }
             try
             {
                 var usuarioActualId = _userManager.GetUserId(User);

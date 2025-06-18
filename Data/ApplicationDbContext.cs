@@ -33,24 +33,23 @@ namespace Tenis3t.Data
                 .HasForeignKey(t => t.InventarioId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configuración de Prestamo
             modelBuilder.Entity<Prestamo>(entity =>
-            {
-                entity.HasOne(p => p.TallaInventario)
-                    .WithMany()
-                    .HasForeignKey(p => p.TallaInventarioId)
-                    .OnDelete(DeleteBehavior.Restrict);
+         {
+             entity.HasOne(p => p.TallaInventario)
+                 .WithMany()
+                 .HasForeignKey(p => p.TallaInventarioId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(p => p.UsuarioPrestamista)
-                    .WithMany()
-                    .HasForeignKey(p => p.UsuarioPrestamistaId)
-                    .OnDelete(DeleteBehavior.Restrict);
+             entity.HasOne(p => p.UsuarioPrestamista)
+                 .WithMany()
+                 .HasForeignKey(p => p.UsuarioPrestamistaId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(p => p.UsuarioReceptor)
-                    .WithMany()
-                    .HasForeignKey(p => p.UsuarioReceptorId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
+             entity.HasOne(p => p.UsuarioReceptor)
+                 .WithMany()
+                 .HasForeignKey(p => p.UsuarioReceptorId)
+                 .OnDelete(DeleteBehavior.Restrict);
+         });
 
             // Configuración de Inventario con Usuario
             modelBuilder.Entity<Inventario>()

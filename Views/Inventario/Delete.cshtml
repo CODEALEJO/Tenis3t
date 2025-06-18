@@ -8,7 +8,8 @@
     <h2 class="mb-4 text-center text-danger">Eliminar Producto</h2>
 
     <div class="alert alert-warning">
-        <strong>¡Advertencia!</strong> Esta acción no se puede deshacer. ¿Estás seguro de que deseas eliminar este producto?
+        <strong>¡Advertencia!</strong> Esta acción no se puede deshacer. ¿Estás seguro de que deseas eliminar este
+        producto?
     </div>
 
     <dl class="row">
@@ -34,6 +35,7 @@
     <form asp-action="Delete" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
+        <input type="hidden" name="claveSeguridad" value="@TempData["ClaveSeguridad"]" />
         <button type="submit" class="btn btn-danger">
             <i class="bi bi-trash"></i> Confirmar Eliminación
         </button>

@@ -490,29 +490,78 @@ namespace Tenis3t.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id, string claveSeguridad)
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Delete(int id, string claveSeguridad)
+{
+    if (claveSeguridad != DeletePassword)
+    {
+        TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
+        return RedirectToAction(nameof(Index));
+    }
+
+    var usuarioActual = await _userManager.GetUserAsync(User);
+    var venta = await _context.Ventas
+        .Include(v => v.Detalles)
+            .ThenInclude(d => d.TallaInventario)
+        .Include(v => v.Pagos)
+        .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
+
+    if (venta == null)
+    {
+        return NotFound();
+    }
+
+    // Crear la estrategia de ejecución para MySQL
+    var executionStrategy = _context.Database.CreateExecutionStrategy();
+
+    return await executionStrategy.ExecuteAsync(async () =>
+    {
+        using (var transaction = await _context.Database.BeginTransactionAsync())
         {
-            if (claveSeguridad != DeletePassword)
+            try
             {
-                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-                return RedirectToAction(nameof(Index));
+                // Devolver los productos al inventario
+                foreach (var detalle in venta.Detalles)
+                {
+                    if (detalle.TallaInventario != null)
+                    {
+                        detalle.TallaInventario.Cantidad += detalle.Cantidad;
+                        _context.Update(detalle.TallaInventario);
+                    }
+                }
+
+                // Eliminar los pagos asociados primero (por las restricciones de clave foránea)
+                if (venta.Pagos != null && venta.Pagos.Any())
+                {
+                    _context.Pagos.RemoveRange(venta.Pagos);
+                }
+
+                // Eliminar los detalles de venta
+                if (venta.Detalles != null && venta.Detalles.Any())
+                {
+                    _context.DetallesVenta.RemoveRange(venta.Detalles);
+                }
+
+                // Finalmente eliminar la venta
+                _context.Ventas.Remove(venta);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] = "Venta eliminada exitosamente y productos devueltos al inventario";
             }
-
-            var usuarioActual = await _userManager.GetUserAsync(User);
-            var venta = await _context.Ventas
-                .Include(v => v.Detalles)
-                    .ThenInclude(d => d.TallaInventario)
-                        .ThenInclude(t => t.Inventario)
-                .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id && v.Estado == "Completada");
-
-            if (venta == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error al eliminar venta");
+                TempData["ErrorMessage"] = $"Error al eliminar la venta: {ex.Message}";
+                throw;
             }
-
-            return View("Cancel", venta);
         }
+
+        return RedirectToAction(nameof(Index));
+    });
+}
 
 
         // GET: Ventas/Cancel/5
