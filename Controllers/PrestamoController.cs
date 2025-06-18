@@ -275,6 +275,92 @@ public async Task<IActionResult> Create(CrearPrestamoDto dto)
             }
         }
 
+        // POST: Prestamo/Devolver/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Devolver(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+
+            try
+            {
+                // Obtener el préstamo con sus relaciones
+                var prestamo = await _context.Prestamos
+                    .Include(p => p.TallaInventario)
+                    .ThenInclude(ti => ti.Inventario)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (prestamo == null)
+                {
+                    TempData["ErrorMessage"] = "Préstamo no encontrado";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Verificar que el usuario actual es el prestamista o receptor
+                if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
+                {
+                    TempData["ErrorMessage"] = "No tienes permiso para devolver este préstamo";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Verificar que el préstamo no esté ya devuelto
+                if (prestamo.Estado == "Devuelto")
+                {
+                    TempData["WarningMessage"] = "Este préstamo ya ha sido devuelto";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Actualizar el estado del préstamo
+                prestamo.Estado = "Devuelto";
+
+                // Devolver la cantidad al inventario
+                prestamo.TallaInventario.Cantidad += prestamo.Cantidad;
+
+                // Guardar cambios
+                _context.Update(prestamo);
+                _context.Update(prestamo.TallaInventario);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Préstamo devuelto exitosamente";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al devolver préstamo");
+                TempData["ErrorMessage"] = "Error al devolver el préstamo";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+// GET: Prestamo/Devolver/5
+public async Task<IActionResult> Devolver(int? id)
+{
+    if (id == null)
+    {
+        return NotFound();
+    }
+
+    var prestamo = await _context.Prestamos
+        .Include(p => p.TallaInventario)
+        .ThenInclude(ti => ti.Inventario)
+        .Include(p => p.UsuarioPrestamista)
+        .Include(p => p.UsuarioReceptor)
+        .FirstOrDefaultAsync(m => m.Id == id);
+
+    if (prestamo == null)
+    {
+        return NotFound();
+    }
+
+    var currentUser = await _userManager.GetUserAsync(User);
+    if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
+    {
+        return Forbid();
+    }
+
+    return View(prestamo);
+}
+
         // AJAX: Obtener cantidad disponible
         [HttpGet]
         public async Task<IActionResult> GetCantidadDisponible(int tallaInventarioId)

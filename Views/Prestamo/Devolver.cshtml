@@ -1,4 +1,4 @@
-@* @model Tenis3t.Models.Prestamo
+@model Tenis3t.Models.Prestamo
 
 @{
     ViewData["Title"] = "Marcar como Devuelto";
@@ -13,7 +13,6 @@
         <div class="col-md-6">
             <dl class="row">
                 <dt class="col-sm-4">Producto:</dt>
-                <dd class="col-sm-8">@Model.Inventario?.Nombre</dd>
 
                 <dt class="col-sm-4">Tipo:</dt>
                 <dd class="col-sm-8">@Model.TipoPrestamo</dd>
@@ -28,7 +27,6 @@
                 <dd class="col-sm-8">@Model.FechaPrestamo.ToString("dd/MM/yyyy")</dd>
 
                 <dt class="col-sm-4">Fecha Devolución:</dt>
-                <dd class="col-sm-8">@Model.FechaDevolucionEstimada.ToString("dd/MM/yyyy")</dd>
             </dl>
 
             <form asp-action="Devolver">
@@ -44,4 +42,4 @@
             </form>
         </div>
     </div>
-</div> *@
+</div>

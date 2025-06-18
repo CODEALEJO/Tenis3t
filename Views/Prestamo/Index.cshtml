@@ -33,7 +33,6 @@
                     <th>Cantidad</th>
                     <th>Fecha Préstamo</th>
                     <th>Dev. Estimada</th>
-                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -60,7 +59,7 @@
                             </span>
                         </td>
                         <td>
-                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Detalles</a>
+                            <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Devolver</a>
                             @if (item.Estado == "Prestado")
                             {
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Editar</a>
