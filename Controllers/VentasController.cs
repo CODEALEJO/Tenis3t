@@ -143,7 +143,6 @@ namespace Tenis3t.Controllers
             return View(ventas);
         }
 
-        // GET: Ventas/Create (Paso 1: Selección de productos)
         public async Task<IActionResult> Create()
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
@@ -152,15 +151,22 @@ namespace Tenis3t.Controllers
                 return Unauthorized();
             }
 
-            var inventarioDisponible = await _context.Inventarios
-                .Include(i => i.Tallas)
+            var productosDisponibles = await _context.Inventarios
                 .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
+                .Select(i => new ProductoDisponibleViewModel
+                {
+                    Id = i.Id,
+                    Nombre = i.Nombre,
+                    PrecioVenta = i.PrecioVenta,
+                    Tallas = i.Tallas.Where(t => t.Cantidad > 0).ToList()
+                })
                 .ToListAsync();
 
-            ViewBag.InventarioDisponible = inventarioDisponible;
+            ViewBag.ProductosDisponibles = productosDisponibles;
+            ViewBag.InventarioDisponible = productosDisponibles; // Para el JavaScript
+
             return View(new VentaViewModel());
         }
-
         // POST: Ventas/Create (Paso 1: Guardar productos y pasar a métodos de pago)
         [HttpPost]
         [ValidateAntiForgeryToken]

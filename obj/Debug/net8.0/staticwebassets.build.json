@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "pC8cWRHxyIhctRvTvmlwHazxekms986hZRYKHSUO9jk=",
+  "Hash": "1dPF8AEjkI2qP/xX/L8fR67S3/hkWBamiy/s5W8Pi4c=",
   "Source": "Tenis3t",
   "BasePath": "_content/Tenis3t",
   "Mode": "Default",
@@ -2215,8 +2215,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "ScopedCss",
       "AssetTraitValue": "ApplicationBundle",
-      "Fingerprint": "84m6382jss",
-      "Integrity": "iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=",
+      "Fingerprint": "b8qq0uj9zo",
+      "Integrity": "tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Tenis3t\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Tenis3t.styles.css"
@@ -2236,8 +2236,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "ScopedCss",
       "AssetTraitValue": "ProjectBundle",
-      "Fingerprint": "84m6382jss",
-      "Integrity": "iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=",
+      "Fingerprint": "b8qq0uj9zo",
+      "Integrity": "tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Tenis3t\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Tenis3t.bundle.scp.css"
@@ -14562,7 +14562,7 @@
       ]
     },
     {
-      "Route": "Tenis3t.84m6382jss.bundle.scp.css",
+      "Route": "Tenis3t.b8qq0uj9zo.bundle.scp.css",
       "AssetFile": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Tenis3t\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Tenis3t.bundle.scp.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -14572,7 +14572,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1125"
+          "Value": "2038"
         },
         {
           "Name": "Content-Type",
@@ -14580,11 +14580,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=\""
+          "Value": "\"tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 02:41:46 GMT"
+          "Value": "Wed, 02 Jul 2025 03:43:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -14594,7 +14594,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "84m6382jss"
+          "Value": "b8qq0uj9zo"
         },
         {
           "Name": "label",
@@ -14602,12 +14602,12 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok="
+          "Value": "sha256-tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI="
         }
       ]
     },
     {
-      "Route": "Tenis3t.84m6382jss.styles.css",
+      "Route": "Tenis3t.b8qq0uj9zo.styles.css",
       "AssetFile": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Tenis3t\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Tenis3t.styles.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -14617,7 +14617,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1125"
+          "Value": "2038"
         },
         {
           "Name": "Content-Type",
@@ -14625,11 +14625,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=\""
+          "Value": "\"tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 02:41:46 GMT"
+          "Value": "Wed, 02 Jul 2025 03:43:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -14639,7 +14639,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "84m6382jss"
+          "Value": "b8qq0uj9zo"
         },
         {
           "Name": "label",
@@ -14647,7 +14647,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok="
+          "Value": "sha256-tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI="
         }
       ]
     },
@@ -14662,7 +14662,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1125"
+          "Value": "2038"
         },
         {
           "Name": "Content-Type",
@@ -14670,11 +14670,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=\""
+          "Value": "\"tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 02:41:46 GMT"
+          "Value": "Wed, 02 Jul 2025 03:43:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -14684,7 +14684,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok="
+          "Value": "sha256-tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI="
         }
       ]
     },
@@ -14699,7 +14699,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "1125"
+          "Value": "2038"
         },
         {
           "Name": "Content-Type",
@@ -14707,11 +14707,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok=\""
+          "Value": "\"tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 02:41:46 GMT"
+          "Value": "Wed, 02 Jul 2025 03:43:30 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -14721,7 +14721,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-iGeQ9x1beWreyNx4ln/+EjLoUwxo8ca5brJkt0aaGok="
+          "Value": "sha256-tVDcPyV2X5rCqdizGZwywAXrot4MWW1HgVakurvX1mI="
         }
       ]
     }

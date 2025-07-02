@@ -46,3 +46,45 @@ button.accept-policy {
   white-space: nowrap;
   line-height: 60px;
 }
+
+/* Estilos para los botones del navbar */
+.navbar .btn {
+    transition: all 0.3s ease;
+}
+
+.navbar .btn-primary {
+    background-color: #8a2be2;
+    border-color: #8a2be2;
+}
+
+.navbar .btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.navbar .btn-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.navbar .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Efecto al pasar el mouse */
+.navbar .btn:hover {
+    opacity: 0.9;
+}
+
+/* Efecto al hacer clic (active) */
+.navbar .btn:active,
+.navbar .btn.active {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+/* Asegurar que el texto sea visible */
+.navbar .btn {
+    color: white !important;
+}

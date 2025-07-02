@@ -47,3 +47,45 @@ button.accept-policy[b-ob0629uxhx] {
   white-space: nowrap;
   line-height: 60px;
 }
+
+/* Estilos para los botones del navbar */
+.navbar .btn[b-ob0629uxhx] {
+    transition: all 0.3s ease;
+}
+
+.navbar .btn-primary[b-ob0629uxhx] {
+    background-color: #8a2be2;
+    border-color: #8a2be2;
+}
+
+.navbar .btn-warning[b-ob0629uxhx] {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.navbar .btn-success[b-ob0629uxhx] {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.navbar .btn-danger[b-ob0629uxhx] {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Efecto al pasar el mouse */
+.navbar .btn:hover[b-ob0629uxhx] {
+    opacity: 0.9;
+}
+
+/* Efecto al hacer clic (active) */
+.navbar .btn:active[b-ob0629uxhx],
+.navbar .btn.active[b-ob0629uxhx] {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+/* Asegurar que el texto sea visible */
+.navbar .btn[b-ob0629uxhx] {
+    color: white !important;
+}
