@@ -75,7 +75,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="company-name">Entrada de productos</div>
+        <div class="company-name">Tenis3t</div>
         <div class="document-title">Ficha de Producto</div>
         <div>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
     </div>
@@ -92,6 +92,10 @@
         <div class="info-row">
             <div class="info-label">Stock Total:</div>
             <div>@Model.Cantidad unidades</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Costo Unitario:</div>
+            <div>$@Model.CostoFormateado</div>
         </div>
         <div class="info-row">
             <div class="info-label">Precio Venta:</div>

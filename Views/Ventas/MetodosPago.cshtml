@@ -64,10 +64,11 @@
                                             <input type="hidden" asp-for="@Model.Detalles[i].PrecioUnitario" />
                                         </td>
                                         <td>
-                                            @((Model.Detalles[i].PrecioUnitario * Model.Detalles[i].Cantidad).ToString("C", new CultureInfo("es-CO")))
-                                        </td>
-                                    </tr>
-                                }
+                                            @((Model.Detalles[i].PrecioUnitario * Model.Detalles[i].Cantidad).ToString("C",
+                                                                                    new CultureInfo("es-CO")))
+                                    </td>
+                                </tr>
+                                                                }
                             </tbody>
                         </table>
                     </div>
@@ -77,48 +78,99 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="mb-0">Métodos de Pago</h4>
-                        <button type="button" id="addPagoBtn" class="btn btn-success">
+                        <button type="button" class="btn btn-success" id="btnAgregarMetodo">
                             <i class="bi bi-plus-circle"></i> Agregar Método
                         </button>
                     </div>
 
                     <div id="metodosPagoContainer">
-                        @for (int i = 0; i < Model.MetodosPago.Count; i++)
+                        @if (Model.MetodosPago != null && Model.MetodosPago.Any())
                         {
-                            <div class="card mb-3 metodo-pago-item" data-index="@i">
+                            @for (int i = 0; i < Model.MetodosPago.Count; i++)
+                            {
+                                <div class="card mb-3 metodo-pago-item" data-index="@i">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="control-label">Método de Pago</label>
+                                                    <select asp-for="@Model.MetodosPago[i].MetodoPagoId"
+                                                        class="form-control metodo-pago-select">
+                                                        <option value="">Seleccione...</option>
+                                                        @foreach (var metodo in ViewBag.MetodosPagoDisponibles)
+                                                        {
+                                                            <option value="@metodo.Value">@metodo.Text</option>
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="@Model.MetodosPago[i].MetodoPagoId"
+                                                        class="text-danger"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label asp-for="@Model.MetodosPago[i].Monto"
+                                                        class="control-label">Monto</label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">$</span>
+                                                        </div>
+                                                        <input asp-for="@Model.MetodosPago[i].Monto"
+                                                            class="form-control monto-input" />
+                                                    </div>
+                                                    <span asp-validation-for="@Model.MetodosPago[i].Monto"
+                                                        class="text-danger"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger btn-sm btn-eliminar-metodo">
+                                                    <i class="bi bi-trash"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="card mb-3 metodo-pago-item" data-index="0">
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label class="control-label">Método de Pago</label>
-                                                <select asp-for="@Model.MetodosPago[i].MetodoPagoId" 
-                                                        class="form-control metodo-pago-select">
+                                                <select name="MetodosPago[0].MetodoPagoId"
+                                                    class="form-control metodo-pago-select">
                                                     <option value="">Seleccione...</option>
                                                     @foreach (var metodo in ViewBag.MetodosPagoDisponibles)
                                                     {
                                                         <option value="@metodo.Value">@metodo.Text</option>
                                                     }
                                                 </select>
-                                                <span asp-validation-for="@Model.MetodosPago[i].MetodoPagoId" class="text-danger"></span>
+                                                <span class="text-danger field-validation-valid"
+                                                    data-valmsg-for="MetodosPago[0].MetodoPagoId"
+                                                    data-valmsg-replace="true"></span>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label asp-for="@Model.MetodosPago[i].Monto" class="control-label">Monto</label>
+                                                <label class="control-label">Monto</label>
                                                 <div class="input-group">
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text">$</span>
                                                     </div>
-                                                    <input asp-for="@Model.MetodosPago[i].Monto" 
-                                                           class="form-control monto-input" 
-                                                           onchange="calcularTotalPagos()" />
+                                                    <input name="MetodosPago[0].Monto" class="form-control monto-input"
+                                                        type="number" min="0" step="0.01" />
                                                 </div>
-                                                <span asp-validation-for="@Model.MetodosPago[i].Monto" class="text-danger"></span>
+                                                <span class="text-danger field-validation-valid"
+                                                    data-valmsg-for="MetodosPago[0].Monto"
+                                                    data-valmsg-replace="true"></span>
                                             </div>
                                         </div>
                                         <div class="col-md-2 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger btn-sm remove-pago" onclick="removePagoItem(this)">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="button" class="btn btn-danger btn-sm btn-eliminar-metodo"
+                                                disabled>
+                                                <i class="bi bi-trash"></i> Eliminar
                                             </button>
                                         </div>
                                     </div>
@@ -126,6 +178,7 @@
                             </div>
                         }
                     </div>
+                    <small id="maxMetodosMsg" class="text-muted d-none">Máximo 4 métodos de pago alcanzado</small>
                 </div>
 
                 <!-- Resumen de Pagos -->
@@ -133,10 +186,12 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <h5>Total Venta: <span class="float-right">@ViewBag.TotalVenta.ToString("C", new CultureInfo("es-CO"))</span></h5>
+                                <h5>Total Venta: <span class="float-right">@ViewBag.TotalVenta.ToString("C", new
+                                                                                CultureInfo("es-CO"))</span></h5>
                                 <h5>Total Pagado: <span id="totalPagado" class="float-right">0</span></h5>
                                 <h4 id="restanteContainer">
-                                    Restante: <span id="restante" class="float-right">@ViewBag.TotalVenta.ToString("C", new CultureInfo("es-CO"))</span>
+                                    Restante: <span id="restante" class="float-right">@ViewBag.TotalVenta.ToString("C",
+                                                                                new CultureInfo("es-CO"))</span>
                                 </h4>
                             </div>
                         </div>
@@ -160,164 +215,215 @@
         </form>
     </div>
 </div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
     <script>
-        // Función para calcular el total de pagos
-        function calcularTotalPagos() {
-            let totalPagado = 0;
-            const montos = document.querySelectorAll('.monto-input');
+        $(document).ready(function () {
+            // Inicializar contador basado en los métodos existentes
+            var metodoCounter = $('#metodosPagoContainer .metodo-pago-item').length;
             
-            montos.forEach(input => {
-                const monto = parseFloat(input.value) || 0;
-                totalPagado += monto;
-            });
-            
-            const totalVenta = @ViewBag.TotalVenta;
-            const restante = totalVenta - totalPagado;
-            
-            document.getElementById('totalPagado').textContent = totalPagado.toLocaleString('es-CO', {
-                style: 'currency',
-                currency: 'COP'
-            });
-            
-            document.getElementById('restante').textContent = restante.toLocaleString('es-CO', {
-                style: 'currency',
-                currency: 'COP'
-            });
-            
-            // Cambiar color según el restante
-            const restanteElement = document.getElementById('restante');
-            if (Math.abs(restante) < 0.01) {
-                restanteElement.classList.remove('text-danger');
-                restanteElement.classList.add('text-success');
-            } else {
-                restanteElement.classList.remove('text-success');
-                restanteElement.classList.add('text-danger');
+            // Habilitar botones de eliminar si hay más de un método inicialmente
+            if (metodoCounter > 1) {
+                $('.btn-eliminar-metodo').prop('disabled', false);
             }
-        }
 
-        // Función para eliminar un método de pago
-        function removePagoItem(button) {
-            const container = document.getElementById('metodosPagoContainer');
-            const items = container.querySelectorAll('.metodo-pago-item');
-            
-            if (items.length > 1) {
-                button.closest('.metodo-pago-item').remove();
-                recalcularIndices();
-                calcularTotalPagos();
-                $.validator.unobtrusive.parse(container);
-            } else {
-                // Si solo queda uno, limpiar sus valores
-                const item = button.closest('.metodo-pago-item');
-                item.querySelector('.metodo-pago-select').value = '';
-                item.querySelector('.monto-input').value = '';
-                calcularTotalPagos();
-            }
-        }
+            // Calcular total inicial
+            calcularTotalPagos();
 
-        // Función para agregar un nuevo método de pago
-        function addPagoItem() {
-            const container = document.getElementById('metodosPagoContainer');
-            const nextIndex = container.querySelectorAll('.metodo-pago-item').length;
-            
-            // Obtener las opciones de métodos de pago del primer select existente
-            const primerSelect = container.querySelector('.metodo-pago-select');
-            const optionsHtml = primerSelect ? primerSelect.innerHTML : '<option value="">Seleccione...</option>';
-            
-            const newItem = document.createElement('div');
-            newItem.className = 'card mb-3 metodo-pago-item';
-            newItem.setAttribute('data-index', nextIndex);
-            newItem.innerHTML = `
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="control-label">Método de Pago</label>
-                                <select name="MetodosPago[${nextIndex}].MetodoPagoId" 
-                                        class="form-control metodo-pago-select">
-                                    ${optionsHtml}
-                                </select>
-                                <span class="text-danger field-validation-valid" 
-                                      data-valmsg-for="MetodosPago[${nextIndex}].MetodoPagoId" 
-                                      data-valmsg-replace="true"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="control-label">Monto</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">$</span>
+            // Evento para agregar método de pago
+            $('#btnAgregarMetodo').click(function () {
+                if (metodoCounter >= 4) {
+                    $('#maxMetodosMsg').removeClass('d-none');
+                    return;
+                }
+
+                var newIndex = metodoCounter;
+                metodoCounter++;
+
+                var html = `
+                    <div class="card mb-3 metodo-pago-item" data-index="${newIndex}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="control-label">Método de Pago</label>
+                                        <select name="MetodosPago[${newIndex}].MetodoPagoId" 
+                                                class="form-control metodo-pago-select">
+                                            <option value="">Seleccione...</option>
+                                            @foreach (var metodo in ViewBag.MetodosPagoDisponibles)
+                                            {
+                                                <option value="@metodo.Value">@metodo.Text</option>
+                                            }
+                                        </select>
+                                        <span class="text-danger field-validation-valid" 
+                                              data-valmsg-for="MetodosPago[${newIndex}].MetodoPagoId" 
+                                              data-valmsg-replace="true"></span>
                                     </div>
-                                    <input name="MetodosPago[${nextIndex}].Monto" 
-                                           class="form-control monto-input" 
-                                           type="number"
-                                           min="0"
-                                           step="100"
-                                           onchange="calcularTotalPagos()"
-                                           data-val="true" 
-                                           data-val-required="El campo Monto es obligatorio." 
-                                           data-val-number="El campo Monto debe ser un número." />
                                 </div>
-                                <span class="text-danger field-validation-valid" 
-                                      data-valmsg-for="MetodosPago[${nextIndex}].Monto" 
-                                      data-valmsg-replace="true"></span>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label class="control-label">Monto</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">$</span>
+                                            </div>
+                                            <input name="MetodosPago[${newIndex}].Monto" 
+                                                   class="form-control monto-input" 
+                                                   type="number"
+                                                   min="0"
+                                                   step="0.01"
+                                                   oninput="calcularTotalPagos()" />
+                                        </div>
+                                        <span class="text-danger field-validation-valid" 
+                                              data-valmsg-for="MetodosPago[${newIndex}].Monto" 
+                                              data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label class="control-label">Referencia/Detalle</label>
+                                        <input name="MetodosPago[${newIndex}].Referencia" 
+                                               class="form-control referencia-input" 
+                                               type="text" />
+                                        <span class="text-danger field-validation-valid" 
+                                              data-valmsg-for="MetodosPago[${newIndex}].Referencia" 
+                                              data-valmsg-replace="true"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm btn-eliminar-metodo" onclick="eliminarMetodoPago(this)">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-danger btn-sm remove-pago" onclick="removePagoItem(this)">
-                                <i class="bi bi-trash"></i>
-                            </button>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+
+                $('#metodosPagoContainer').append(html);
+
+                // Habilitar botones de eliminar si hay más de un método
+                if (metodoCounter > 1) {
+                    $('.btn-eliminar-metodo').prop('disabled', false);
+                }
+
+                // Mostrar mensaje si alcanzamos el máximo
+                if (metodoCounter >= 4) {
+                    $('#maxMetodosMsg').removeClass('d-none');
+                }
+
+                // Revalidar el formulario
+                var form = $('#formPagos');
+                form.removeData('validator');
+                form.removeData('unobtrusiveValidation');
+                $.validator.unobtrusive.parse(form);
+            });
+
+            // Evento para cambios en los montos
+            $(document).on('input', '.monto-input', function () {
+                calcularTotalPagos();
+            });
+        });
+
+        // Función para eliminar un método de pago (similar a eliminarDetalle)
+        function eliminarMetodoPago(button) {
+            var items = $('.metodo-pago-item');
             
-            container.appendChild(newItem);
-            
-            // Inicializar validación para el nuevo elemento
-            $.validator.unobtrusive.parse(newItem);
-            
-            // Recalcular totales
-            calcularTotalPagos();
-        }
-        
-        // Función para recalcular índices después de eliminar
-        function recalcularIndices() {
-            const items = document.querySelectorAll('.metodo-pago-item');
-            items.forEach((item, index) => {
-                item.setAttribute('data-index', index);
+            if (items.length > 1) {
+                $(button).closest('.metodo-pago-item').remove();
                 
-                // Actualizar names
-                const inputs = item.querySelectorAll('[name]');
-                inputs.forEach(input => {
-                    const name = input.getAttribute('name');
+                // Actualizar contador
+                var metodoCounter = $('#metodosPagoContainer .metodo-pago-item').length;
+                
+                // Recalcular índices
+                recalcularIndicesMetodosPago();
+                
+                // Ocultar mensaje de máximo
+                $('#maxMetodosMsg').addClass('d-none');
+                
+                // Deshabilitar botones de eliminar si solo queda uno
+                if (metodoCounter <= 1) {
+                    $('.btn-eliminar-metodo').prop('disabled', true);
+                }
+                
+                // Revalidar el formulario
+                var form = $('#formPagos');
+                form.removeData('validator');
+                form.removeData('unobtrusiveValidation');
+                $.validator.unobtrusive.parse(form);
+                
+                // Recalcular totales
+                calcularTotalPagos();
+            } else {
+                alert('Debe haber al menos un método de pago.');
+            }
+        }
+
+        // Función para recalcular índices (similar a recalcularNumerosIndex)
+        function recalcularIndicesMetodosPago() {
+            $('.metodo-pago-item').each(function (index) {
+                $(this).attr('data-index', index);
+                
+                // Actualizar names de todos los campos
+                $(this).find('[name]').each(function() {
+                    var name = $(this).attr('name');
                     if (name) {
-                        input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        name = name.replace(/MetodosPago\[\d+\]\./, `MetodosPago[${index}].`);
+                        $(this).attr('name', name);
                     }
                 });
                 
                 // Actualizar data-valmsg-for
-                const spans = item.querySelectorAll('[data-valmsg-for]');
-                spans.forEach(span => {
-                    const forAttr = span.getAttribute('data-valmsg-for');
+                $(this).find('[data-valmsg-for]').each(function() {
+                    var forAttr = $(this).attr('data-valmsg-for');
                     if (forAttr) {
-                        span.setAttribute('data-valmsg-for', forAttr.replace(/\[\d+\]/, `[${index}]`));
+                        forAttr = forAttr.replace(/MetodosPago\[\d+\]\./, `MetodosPago[${index}].`);
+                        $(this).attr('data-valmsg-for', forAttr);
                     }
                 });
             });
         }
 
-        // Inicialización cuando el DOM está listo
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configurar el botón para agregar métodos de pago
-            document.getElementById('addPagoBtn').addEventListener('click', addPagoItem);
-            
-            // Calcular totales al cargar la página
-            calcularTotalPagos();
-        });
+        // Función para calcular total pagado y restante (similar a calcularTotal)
+        function calcularTotalPagos() {
+            let totalPagado = 0;
+            $('.monto-input').each(function () {
+                const monto = parseFloat($(this).val()) || 0;
+                totalPagado += monto;
+            });
+
+            const totalVenta = @ViewBag.TotalVenta;
+            const restante = totalVenta - totalPagado;
+
+            // Formatear y mostrar valores
+            $('#totalPagado').text(formatCurrency(totalPagado));
+            $('#restante').text(formatCurrency(restante));
+
+            // Cambiar color según el restante
+            const restanteElement = $('#restante');
+            if (Math.abs(restante) < 0.01) {
+                restanteElement.removeClass('text-danger').addClass('text-success');
+                $('#submitBtn').prop('disabled', false);
+            } else if (restante > 0) {
+                restanteElement.removeClass('text-success').addClass('text-danger');
+                $('#submitBtn').prop('disabled', false);
+            } else {
+                restanteElement.removeClass('text-success').addClass('text-warning');
+                $('#submitBtn').prop('disabled', false);
+            }
+        }
+
+        // Función auxiliar para formatear moneda
+        function formatCurrency(value) {
+            return value.toLocaleString('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
     </script>
 }

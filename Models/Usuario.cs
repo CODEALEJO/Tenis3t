@@ -5,7 +5,6 @@ namespace Tenis3t.Models
 public class LoginViewModel
 {
     [Required]
-    [EmailAddress]
     public string Email { get; set; } = string.Empty; // Inicializa con valor por defecto
 
     [Required]
@@ -19,7 +18,7 @@ public class LoginViewModel
     public class RegisterViewModel
     {
         [Required]
-        [EmailAddress]
+       
         public string Email { get; set; }
 
         [Required]

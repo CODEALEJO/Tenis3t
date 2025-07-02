@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tenis3t.Data;
 using Tenis3t.Models;
-using System.Text.Json;
 using Tenis3t.Extensions;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Globalization;
@@ -30,6 +29,8 @@ namespace Tenis3t.Controllers
         }
 
         // GET: Ventas con búsqueda y filtros avanzados
+        // Reemplaza el método Index en tu VentasController con esta versión corregida
+
         public async Task<IActionResult> Index(
             string nombreCliente = null,
             string fechaFiltro = null,
@@ -85,14 +86,36 @@ namespace Tenis3t.Controllers
                 case "rango":
                     if (!string.IsNullOrEmpty(fechaFiltro))
                     {
-                        var fechas = fechaFiltro.Split(" a ");
-                        if (fechas.Length == 2 &&
-                            DateTime.TryParse(fechas[0], out var inicio) &&
-                            DateTime.TryParse(fechas[1], out var fin))
+                        // Simplificar el procesamiento del rango
+                        var partes = fechaFiltro.Split(new[] { " a " }, StringSplitOptions.RemoveEmptyEntries);
+
+                        if (partes.Length == 2)
                         {
-                            var fechaInicio = inicio.Date;
-                            var fechaFin = fin.Date.AddDays(1).AddTicks(-1);
-                            query = query.Where(v => v.FechaVenta >= fechaInicio && v.FechaVenta <= fechaFin);
+                            var cultura = CultureInfo.CreateSpecificCulture("es-CO");
+                            var formatos = new[] { "dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "MM/dd/yyyy" };
+
+                            if (DateTime.TryParseExact(partes[0].Trim(), formatos, cultura, DateTimeStyles.None, out var fechaInicio) &&
+                                DateTime.TryParseExact(partes[1].Trim(), formatos, cultura, DateTimeStyles.None, out var fechaFin))
+                            {
+                                // Asegurar que fechaInicio es menor o igual a fechaFin
+                                if (fechaInicio > fechaFin)
+                                {
+                                    (fechaFin, fechaInicio) = (fechaInicio, fechaFin); // Swap values
+                                }
+
+                                // Ajustar fechaFin para incluir todo el día
+                                fechaFin = fechaFin.Date.AddDays(1).AddTicks(-1);
+
+                                query = query.Where(v => v.FechaVenta >= fechaInicio && v.FechaVenta <= fechaFin);
+                            }
+                            else
+                            {
+                                TempData["ErrorMessage"] = "Formato de fecha no válido. Use DD/MM/YYYY a DD/MM/YYYY";
+                            }
+                        }
+                        else
+                        {
+                            TempData["ErrorMessage"] = "Formato de rango no válido. Use DD/MM/YYYY a DD/MM/YYYY";
                         }
                     }
                     break;
@@ -231,7 +254,6 @@ namespace Tenis3t.Controllers
             return View(model);
         }
 
-        // POST: Ventas/MetodosPago
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MetodosPago(VentaViewModel model)
@@ -249,15 +271,23 @@ namespace Tenis3t.Controllers
             decimal totalVenta = ventaViewModel.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
             ViewBag.TotalVenta = totalVenta;
 
-            if (model.MetodosPago == null || !model.MetodosPago.Any(m => m.Monto > 0))
+            // Validar que no haya más de 4 métodos de pago
+            if (model.MetodosPago != null && model.MetodosPago.Count > 4)
+            {
+                ModelState.AddModelError("", "No se pueden agregar más de 4 métodos de pago");
+                return CargarViewBagYRetornarVista(model);
+            }
+
+            // Filtrar solo métodos de pago válidos (con monto > 0 y método seleccionado)
+            var metodosPagoValidos = model.MetodosPago?
+                .Where(m => m.Monto > 0 && m.MetodoPagoId > 0)
+                .ToList() ?? new List<MetodoPagoViewModel>();
+
+            if (!metodosPagoValidos.Any())
             {
                 ModelState.AddModelError("", "Debe agregar al menos un método de pago");
                 return CargarViewBagYRetornarVista(model);
             }
-
-            var metodosPagoValidos = model.MetodosPago
-                .Where(m => m.Monto > 0 && m.MetodoPagoId > 0)
-                .ToList();
 
             decimal totalPagado = metodosPagoValidos.Sum(mp => mp.Monto);
             if (Math.Abs(totalPagado - totalVenta) > 0.01m)
@@ -273,10 +303,29 @@ namespace Tenis3t.Controllers
 
         private IActionResult CargarViewBagYRetornarVista(VentaViewModel model)
         {
-            ViewBag.MetodosPagoDisponibles = new SelectList(_context.MetodoPagos.OrderBy(m => m.Nombre).ToList(), "Id", "Nombre");
-            return View(model);
-        }
+            // Cargar métodos de pago disponibles para el dropdown
+            var metodosPagoDisponibles = _context.MetodoPagos
+                .OrderBy(m => m.Nombre)
+                .Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Nombre
+                })
+                .ToList();
 
+            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
+
+            // Si no hay métodos de pago en el modelo, agregar uno vacío
+            if (model.MetodosPago == null || !model.MetodosPago.Any())
+            {
+                model.MetodosPago = new List<MetodoPagoViewModel>
+        {
+            new MetodoPagoViewModel()
+        };
+            }
+
+            return View("MetodosPago", model);
+        }
         private async Task<IActionResult> ProcesarVenta(VentaViewModel model, List<MetodoPagoViewModel> metodosPago, string usuarioId)
         {
             decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
@@ -490,78 +539,78 @@ namespace Tenis3t.Controllers
         }
 
         [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Delete(int id, string claveSeguridad)
-{
-    if (claveSeguridad != DeletePassword)
-    {
-        TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-        return RedirectToAction(nameof(Index));
-    }
-
-    var usuarioActual = await _userManager.GetUserAsync(User);
-    var venta = await _context.Ventas
-        .Include(v => v.Detalles)
-            .ThenInclude(d => d.TallaInventario)
-        .Include(v => v.Pagos)
-        .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
-
-    if (venta == null)
-    {
-        return NotFound();
-    }
-
-    // Crear la estrategia de ejecución para MySQL
-    var executionStrategy = _context.Database.CreateExecutionStrategy();
-
-    return await executionStrategy.ExecuteAsync(async () =>
-    {
-        using (var transaction = await _context.Database.BeginTransactionAsync())
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, string claveSeguridad)
         {
-            try
+            if (claveSeguridad != DeletePassword)
             {
-                // Devolver los productos al inventario
-                foreach (var detalle in venta.Detalles)
+                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var usuarioActual = await _userManager.GetUserAsync(User);
+            var venta = await _context.Ventas
+                .Include(v => v.Detalles)
+                    .ThenInclude(d => d.TallaInventario)
+                .Include(v => v.Pagos)
+                .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
+
+            if (venta == null)
+            {
+                return NotFound();
+            }
+
+            // Crear la estrategia de ejecución para MySQL
+            var executionStrategy = _context.Database.CreateExecutionStrategy();
+
+            return await executionStrategy.ExecuteAsync(async () =>
+            {
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
-                    if (detalle.TallaInventario != null)
+                    try
                     {
-                        detalle.TallaInventario.Cantidad += detalle.Cantidad;
-                        _context.Update(detalle.TallaInventario);
+                        // Devolver los productos al inventario
+                        foreach (var detalle in venta.Detalles)
+                        {
+                            if (detalle.TallaInventario != null)
+                            {
+                                detalle.TallaInventario.Cantidad += detalle.Cantidad;
+                                _context.Update(detalle.TallaInventario);
+                            }
+                        }
+
+                        // Eliminar los pagos asociados primero (por las restricciones de clave foránea)
+                        if (venta.Pagos != null && venta.Pagos.Any())
+                        {
+                            _context.Pagos.RemoveRange(venta.Pagos);
+                        }
+
+                        // Eliminar los detalles de venta
+                        if (venta.Detalles != null && venta.Detalles.Any())
+                        {
+                            _context.DetallesVenta.RemoveRange(venta.Detalles);
+                        }
+
+                        // Finalmente eliminar la venta
+                        _context.Ventas.Remove(venta);
+
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        TempData["SuccessMessage"] = "Venta eliminada exitosamente y productos devueltos al inventario";
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Error al eliminar venta");
+                        TempData["ErrorMessage"] = $"Error al eliminar la venta: {ex.Message}";
+                        throw;
                     }
                 }
 
-                // Eliminar los pagos asociados primero (por las restricciones de clave foránea)
-                if (venta.Pagos != null && venta.Pagos.Any())
-                {
-                    _context.Pagos.RemoveRange(venta.Pagos);
-                }
-
-                // Eliminar los detalles de venta
-                if (venta.Detalles != null && venta.Detalles.Any())
-                {
-                    _context.DetallesVenta.RemoveRange(venta.Detalles);
-                }
-
-                // Finalmente eliminar la venta
-                _context.Ventas.Remove(venta);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                TempData["SuccessMessage"] = "Venta eliminada exitosamente y productos devueltos al inventario";
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error al eliminar venta");
-                TempData["ErrorMessage"] = $"Error al eliminar la venta: {ex.Message}";
-                throw;
-            }
+                return RedirectToAction(nameof(Index));
+            });
         }
-
-        return RedirectToAction(nameof(Index));
-    });
-}
 
 
         // GET: Ventas/Cancel/5
