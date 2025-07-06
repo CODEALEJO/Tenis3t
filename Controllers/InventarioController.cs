@@ -107,7 +107,7 @@ namespace Tenis3t.Controllers
         {
             if (claveSeguridad != DeletePassword)
             {
-                TempData["ErrorMessage"] = "";
+                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
                 return RedirectToAction(nameof(Index));
             }
 

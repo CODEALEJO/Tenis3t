@@ -17,7 +17,6 @@
 
     <form asp-action="Create" method="post" id="productoForm">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="claveSeguridad" value="@TempData["ClaveSeguridad"]" />
 
         <div class="mb-3">
             <label asp-for="Nombre" class="form-label">Nombre del Producto</label>

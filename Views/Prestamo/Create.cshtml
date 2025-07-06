@@ -40,8 +40,11 @@
             <span asp-validation-for="Cantidad" class="text-danger"></span>
             <small id="cantidadDisponible" class="text-muted"></small>
         </div>
-
-        <button type="submit" class="btn btn-primary">Crear Préstamo</button>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Crear Préstamo</button>
+            <a asp-action="Index" class="btn btn-danger">Cancelar</a>
+        </div>
+        
     </form>
 </div>
 
