@@ -14,7 +14,7 @@ namespace Tenis3t.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<InventarioController> _logger;
-         private const string DeletePassword = "3T2025"; // Misma contraseña que en Ventas
+        private const string DeletePassword = "3T2025"; // Misma contraseña que en Ventas
 
         public InventarioController(
             ApplicationDbContext context,
@@ -53,7 +53,7 @@ namespace Tenis3t.Controllers
             return View(await inventarios.ToListAsync());
         }
 
-         // Nueva acción para imprimir
+        // Nueva acción para imprimir
         public async Task<IActionResult> Imprimir(int id)
         {
             var usuarioActualId = _userManager.GetUserId(User);
@@ -101,14 +101,19 @@ namespace Tenis3t.Controllers
             return View();
         }
 
-          [HttpPost]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
         {
             if (claveSeguridad != DeletePassword)
             {
                 TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-                return RedirectToAction(nameof(Index));
+                ViewBag.Generos = new List<SelectListItem>
+        {
+            new SelectListItem { Value = "hombre", Text = "Hombre" },
+            new SelectListItem { Value = "dama", Text = "Dama" }
+        };
+                return View(inventario);
             }
 
             var usuarioActual = await _userManager.GetUserAsync(User);
@@ -125,9 +130,9 @@ namespace Tenis3t.Controllers
                     // Verificar si ya existe un producto con el mismo nombre y género
                     var productoExistente = await _context.Inventarios
                         .Include(i => i.Tallas)
-                        .FirstOrDefaultAsync(i => 
-                            i.UsuarioId == usuarioActual.Id && 
-                            i.Nombre.ToLower() == inventario.Nombre.ToLower() && 
+                        .FirstOrDefaultAsync(i =>
+                            i.UsuarioId == usuarioActual.Id &&
+                            i.Nombre.ToLower() == inventario.Nombre.ToLower() &&
                             i.Genero == inventario.Genero);
 
                     if (productoExistente != null)
@@ -206,6 +211,15 @@ namespace Tenis3t.Controllers
                 new SelectListItem { Value = "hombre", Text = "Hombre" },
                 new SelectListItem { Value = "dama", Text = "Dama" }
             };
+            _logger.LogInformation($"Clave recibida: {claveSeguridad}, Esperada: {DeletePassword}");
+            _logger.LogInformation($"ModelState válido: {ModelState.IsValid}");
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    _logger.LogError($"Error de validación: {error.ErrorMessage}");
+                }
+            }
 
             return View(inventario);
         }
@@ -231,7 +245,7 @@ namespace Tenis3t.Controllers
             return View(inventario);
         }
 
-             [HttpPost]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
         {
@@ -355,7 +369,7 @@ namespace Tenis3t.Controllers
             return View(inventario);
         }
 
-            [HttpPost, ActionName("Delete")]
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id, string claveSeguridad)
         {
