@@ -59,12 +59,12 @@ namespace Tenis3t.Controllers
                     break;
             }
 
-            var prestamos = await query.ToListAsync();
+            var prestamos = await query.OrderByDescending(p => p.FechaPrestamo).ToListAsync();
             ViewBag.FiltroSeleccionado = filtro;
             return View(prestamos);
         }
 
-             // GET: Prestamo/Create
+        // GET: Prestamo/Create
         public async Task<IActionResult> Create()
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -74,7 +74,7 @@ namespace Tenis3t.Controllers
             }
 
             await CargarDatosParaCrear(currentUser);
-            
+
             // Verificar si hay productos disponibles
             var productos = ViewBag.Productos as List<ProductoSelectViewModel>;
             if (productos == null || !productos.Any())
@@ -85,7 +85,7 @@ namespace Tenis3t.Controllers
 
             var dto = new CrearPrestamoDto
             {
-                
+
                 Cantidad = 1
             };
 
@@ -94,68 +94,68 @@ namespace Tenis3t.Controllers
 
         // POST: Prestamo/Create
         [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(CrearPrestamoDto dto)
-{
-    var currentUser = await _userManager.GetUserAsync(User);
-    
-    if (!ModelState.IsValid)
-    {
-        await CargarDatosParaCrear(currentUser);
-        return View(dto);
-    }
-
-    try
-    {
-        // Validar disponibilidad
-        var talla = await _context.TallasInventario
-            .Include(t => t.Inventario)
-            .FirstOrDefaultAsync(t => t.Id == dto.TallaInventarioId);
-
-        if (talla == null || talla.Inventario.UsuarioId != currentUser.Id)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CrearPrestamoDto dto)
         {
-            ModelState.AddModelError("", "No tienes permiso para prestar este producto");
-            await CargarDatosParaCrear(currentUser);
-            return View(dto);
+            var currentUser = await _userManager.GetUserAsync(User);
+
+            if (!ModelState.IsValid)
+            {
+                await CargarDatosParaCrear(currentUser);
+                return View(dto);
+            }
+
+            try
+            {
+                // Validar disponibilidad
+                var talla = await _context.TallasInventario
+                    .Include(t => t.Inventario)
+                    .FirstOrDefaultAsync(t => t.Id == dto.TallaInventarioId);
+
+                if (talla == null || talla.Inventario.UsuarioId != currentUser.Id)
+                {
+                    ModelState.AddModelError("", "No tienes permiso para prestar este producto");
+                    await CargarDatosParaCrear(currentUser);
+                    return View(dto);
+                }
+
+                if (talla.Cantidad < dto.Cantidad)
+                {
+                    ModelState.AddModelError("Cantidad", $"Solo hay {talla.Cantidad} unidades disponibles");
+                    await CargarDatosParaCrear(currentUser);
+                    return View(dto);
+                }
+
+                // Crear préstamo
+                var prestamo = new Prestamo
+                {
+                    UsuarioPrestamistaId = currentUser.Id,
+                    UsuarioReceptorId = dto.UsuarioReceptorId,
+                    TallaInventarioId = dto.TallaInventarioId,
+                    Cantidad = dto.Cantidad,
+                    Estado = "Prestado"
+                };
+
+                // Actualizar inventario
+                talla.Cantidad -= dto.Cantidad;
+
+                _context.Add(prestamo);
+                _context.Update(talla);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Préstamo creado exitosamente";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear préstamo");
+                ModelState.AddModelError("", "Error al crear el préstamo");
+                await CargarDatosParaCrear(currentUser);
+                return View(dto);
+            }
         }
 
-        if (talla.Cantidad < dto.Cantidad)
-        {
-            ModelState.AddModelError("Cantidad", $"Solo hay {talla.Cantidad} unidades disponibles");
-            await CargarDatosParaCrear(currentUser);
-            return View(dto);
-        }
 
-        // Crear préstamo
-        var prestamo = new Prestamo
-        {
-            UsuarioPrestamistaId = currentUser.Id,
-            UsuarioReceptorId = dto.UsuarioReceptorId,
-            TallaInventarioId = dto.TallaInventarioId,
-            Cantidad = dto.Cantidad,
-            Estado = "Prestado"
-        };
-
-        // Actualizar inventario
-        talla.Cantidad -= dto.Cantidad;
-
-        _context.Add(prestamo);
-        _context.Update(talla);
-        await _context.SaveChangesAsync();
-
-        TempData["SuccessMessage"] = "Préstamo creado exitosamente";
-        return RedirectToAction(nameof(Index));
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error al crear préstamo");
-        ModelState.AddModelError("", "Error al crear el préstamo");
-        await CargarDatosParaCrear(currentUser);
-        return View(dto);
-    }
-}
-
-       
 
         // Método privado para crear el préstamo en la base de datos
         private async Task CrearPrestamoEnBaseDeDatos(CrearPrestamoDto dto, IdentityUser currentUser)
@@ -259,10 +259,11 @@ public async Task<IActionResult> Create(CrearPrestamoDto dto)
                     .Where(ti => ti.InventarioId == productoId &&
                                 ti.Cantidad > 0 &&
                                 ti.Inventario.UsuarioId == currentUser.Id)
-                    .Select(ti => new { 
-                        id = ti.Id, 
-                        talla = ti.Talla, 
-                        cantidad = ti.Cantidad 
+                    .Select(ti => new
+                    {
+                        id = ti.Id,
+                        talla = ti.Talla,
+                        cantidad = ti.Cantidad
                     })
                     .ToListAsync();
 
@@ -287,7 +288,7 @@ public async Task<IActionResult> Create(CrearPrestamoDto dto)
                 // Obtener el préstamo con sus relaciones
                 var prestamo = await _context.Prestamos
                     .Include(p => p.TallaInventario)
-                    .ThenInclude(ti => ti.Inventario)
+                        .ThenInclude(ti => ti.Inventario)
                     .FirstOrDefaultAsync(p => p.Id == id);
 
                 if (prestamo == null)
@@ -310,19 +311,79 @@ public async Task<IActionResult> Create(CrearPrestamoDto dto)
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Actualizar el estado del préstamo
-                prestamo.Estado = "Devuelto";
+                // Determinar quién está devolviendo (prestamista o receptor)
+                bool esPrestamista = prestamo.UsuarioPrestamistaId == currentUser.Id;
 
-                // Devolver la cantidad al inventario
-                prestamo.TallaInventario.Cantidad += prestamo.Cantidad;
+                using var transaction = await _context.Database.BeginTransactionAsync();
 
-                // Guardar cambios
-                _context.Update(prestamo);
-                _context.Update(prestamo.TallaInventario);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    // Actualizar el estado del préstamo
+                    prestamo.Estado = "Devuelto";
+                    _context.Update(prestamo);
 
-                TempData["SuccessMessage"] = "Préstamo devuelto exitosamente";
-                return RedirectToAction(nameof(Index));
+                    if (esPrestamista)
+                    {
+                        // Si el prestamista está devolviendo (cancelando el préstamo)
+                        // Devolver la cantidad al inventario del prestamista
+                        prestamo.TallaInventario.Cantidad += prestamo.Cantidad;
+                        _context.Update(prestamo.TallaInventario);
+                    }
+                    else
+                    {
+                        // Si el receptor está devolviendo
+                        // Buscar el producto en el inventario del prestamista
+                        var inventarioPrestamista = await _context.Inventarios
+                            .FirstOrDefaultAsync(i => i.UsuarioId == prestamo.UsuarioPrestamistaId &&
+                                                   i.Nombre == prestamo.TallaInventario.Inventario.Nombre);
+
+                        if (inventarioPrestamista == null)
+                        {
+                            // Si el prestamista ya no tiene el producto, crearlo
+                            inventarioPrestamista = new Inventario
+                            {
+                                Nombre = prestamo.TallaInventario.Inventario.Nombre,
+                                UsuarioId = prestamo.UsuarioPrestamistaId
+                            };
+                            _context.Add(inventarioPrestamista);
+                            await _context.SaveChangesAsync(); // Guardar para obtener el ID
+                        }
+
+                        // Buscar la talla en el inventario del prestamista
+                        var tallaPrestamista = await _context.TallasInventario
+                            .FirstOrDefaultAsync(t => t.InventarioId == inventarioPrestamista.Id &&
+                                                   t.Talla == prestamo.TallaInventario.Talla);
+
+                        if (tallaPrestamista == null)
+                        {
+                            // Si no existe la talla, crearla
+                            tallaPrestamista = new TallaInventario
+                            {
+                                InventarioId = inventarioPrestamista.Id,
+                                Talla = prestamo.TallaInventario.Talla,
+                                Cantidad = prestamo.Cantidad
+                            };
+                            _context.Add(tallaPrestamista);
+                        }
+                        else
+                        {
+                            // Si existe, incrementar la cantidad
+                            tallaPrestamista.Cantidad += prestamo.Cantidad;
+                            _context.Update(tallaPrestamista);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    TempData["SuccessMessage"] = "Préstamo devuelto exitosamente";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -332,34 +393,41 @@ public async Task<IActionResult> Create(CrearPrestamoDto dto)
             }
         }
 
-// GET: Prestamo/Devolver/5
-public async Task<IActionResult> Devolver(int? id)
-{
-    if (id == null)
-    {
-        return NotFound();
-    }
+        // GET: Prestamo/Devolver/5
+        public async Task<IActionResult> Devolver(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-    var prestamo = await _context.Prestamos
-        .Include(p => p.TallaInventario)
-        .ThenInclude(ti => ti.Inventario)
-        .Include(p => p.UsuarioPrestamista)
-        .Include(p => p.UsuarioReceptor)
-        .FirstOrDefaultAsync(m => m.Id == id);
+            var prestamo = await _context.Prestamos
+                .Include(p => p.TallaInventario)
+                    .ThenInclude(ti => ti.Inventario)
+                .Include(p => p.UsuarioPrestamista)
+                .Include(p => p.UsuarioReceptor)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-    if (prestamo == null)
-    {
-        return NotFound();
-    }
+            if (prestamo == null)
+            {
+                return NotFound();
+            }
 
-    var currentUser = await _userManager.GetUserAsync(User);
-    if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
-    {
-        return Forbid();
-    }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
+            {
+                return Forbid();
+            }
 
-    return View(prestamo);
-}
+            // Determinar si es un préstamo realizado o recibido
+            prestamo.TipoPrestamo = prestamo.UsuarioPrestamistaId == currentUser.Id ? "Realizado" : "Recibido";
+            prestamo.LocalPersona = prestamo.TipoPrestamo == "Realizado"
+                ? prestamo.UsuarioReceptor?.UserName
+                : prestamo.UsuarioPrestamista?.UserName;
+
+            return View(prestamo);
+        }
+
 
         // AJAX: Obtener cantidad disponible
         [HttpGet]

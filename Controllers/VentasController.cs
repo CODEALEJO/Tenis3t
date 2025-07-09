@@ -44,7 +44,7 @@ namespace Tenis3t.Controllers
                 return Unauthorized();
             }
 
-            // Consulta base con includes
+            // Consulta base con includes 
             var query = _context.Ventas
                 .Include(v => v.UsuarioVendedor)
                 .Include(v => v.Cliente)
@@ -54,6 +54,7 @@ namespace Tenis3t.Controllers
                 .Include(v => v.Pagos)
                     .ThenInclude(p => p.MetodoPago)
                 .Where(v => v.UsuarioVendedorId == usuarioActual.Id)
+                .OrderByDescending(v => v.FechaVenta)  // <-- Añadido aquí para mayor claridad
                 .AsQueryable();
 
             // Filtro por nombre de cliente

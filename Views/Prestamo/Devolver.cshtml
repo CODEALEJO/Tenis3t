@@ -13,6 +13,7 @@
         <div class="col-md-6">
             <dl class="row">
                 <dt class="col-sm-4">Producto:</dt>
+                <dd class="col-sm-8">@Model.TallaInventario.Inventario.Nombre (@Model.TallaInventario.Talla)</dd>
 
                 <dt class="col-sm-4">Tipo:</dt>
                 <dd class="col-sm-8">@Model.TipoPrestamo</dd>
@@ -26,7 +27,12 @@
                 <dt class="col-sm-4">Fecha Préstamo:</dt>
                 <dd class="col-sm-8">@Model.FechaPrestamo.ToString("dd/MM/yyyy")</dd>
 
-                <dt class="col-sm-4">Fecha Devolución:</dt>
+                <dt class="col-sm-4">Estado:</dt>
+                <dd class="col-sm-8">
+                    <span class="badge @(Model.Estado == "Prestado" ? "bg-warning" : "bg-success")">
+                        @Model.Estado
+                    </span>
+                </dd>
             </dl>
 
             <form asp-action="Devolver">
@@ -35,7 +41,7 @@
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-check-circle"></i> Confirmar Devolución
                     </button>
-                    <a asp-action="Index" class="btn btn-secondary">
+                    <a asp-action="Index" class="btn btn-danger">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </a>
                 </div>

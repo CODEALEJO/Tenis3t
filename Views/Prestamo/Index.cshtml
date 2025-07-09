@@ -62,10 +62,14 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-danger">Devolver</a>
                                     @if (item.Estado == "Prestado")
                                     {
+                                        <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-danger">Devolver</a>
                                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Editar</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No hay acciones</span>
                                     }
                                 </div>
                             </td>
@@ -105,10 +109,14 @@
                         </div>
                     </div>
                     <div class="mt-2 btn-group w-100" role="group">
-                        <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Devolver</a>
                         @if (item.Estado == "Prestado")
                         {
+                            <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Devolver</a>
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Editar</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">No hay acciones disponibles</span>
                         }
                     </div>
                 </div>
