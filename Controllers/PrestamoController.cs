@@ -201,35 +201,35 @@ namespace Tenis3t.Controllers
             }
         }
 
-       // Método privado para cargar datos para la vista
-private async Task CargarDatosParaCrear(IdentityUser currentUser)
-{
-    try
-    {
-        // Productos ordenados alfabéticamente (A-Z) por Nombre
-        var productos = await _context.Inventarios
-            .Where(i => i.UsuarioId == currentUser.Id)
-            .OrderBy(i => i.Nombre) // Orden alfabético
-            .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
-            .ToListAsync();
+        // Método privado para cargar datos para la vista
+        private async Task CargarDatosParaCrear(IdentityUser currentUser)
+        {
+            try
+            {
+                // Productos ordenados alfabéticamente (A-Z) por Nombre
+                var productos = await _context.Inventarios
+                    .Where(i => i.UsuarioId == currentUser.Id)
+                    .OrderBy(i => i.Nombre) // Orden alfabético
+                    .Select(i => new ProductoSelectViewModel { Id = i.Id, Nombre = i.Nombre })
+                    .ToListAsync();
 
-        // Usuarios ordenados alfabéticamente (A-Z) por UserName
-        var usuarios = await _userManager.Users
-            .Where(u => u.Id != currentUser.Id)
-            .OrderBy(u => u.UserName) // Orden alfabético
-            .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
-            .ToListAsync();
+                // Usuarios ordenados alfabéticamente (A-Z) por UserName
+                var usuarios = await _userManager.Users
+                    .Where(u => u.Id != currentUser.Id)
+                    .OrderBy(u => u.UserName) // Orden alfabético
+                    .Select(u => new UsuarioSelectViewModel { Id = u.Id, UserName = u.UserName })
+                    .ToListAsync();
 
-        ViewBag.Productos = productos ?? new List<ProductoSelectViewModel>();
-        ViewBag.Usuarios = usuarios ?? new List<UsuarioSelectViewModel>();
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error al cargar datos para Create");
-        ViewBag.Productos = new List<ProductoSelectViewModel>();
-        ViewBag.Usuarios = new List<UsuarioSelectViewModel>();
-    }
-}
+                ViewBag.Productos = productos ?? new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = usuarios ?? new List<UsuarioSelectViewModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar datos para Create");
+                ViewBag.Productos = new List<ProductoSelectViewModel>();
+                ViewBag.Usuarios = new List<UsuarioSelectViewModel>();
+            }
+        }
 
         // Método privado para loggear errores de validación
         private void LogearErroresValidacion()

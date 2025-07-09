@@ -7,6 +7,14 @@
 <div class="container mt-4">
     <h2>Editar Producto</h2>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show">
@@ -18,7 +26,7 @@
     <form asp-action="Edit" method="post" id="productoForm">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
-        <input type="hidden" name="claveSeguridad" value="@TempData["ClaveSeguridad"]" />
+        <input type="hidden" name="claveSeguridad" id="claveSeguridad" />
 
         <div class="mb-3">
             <label asp-for="Nombre" class="form-label">Nombre del Producto</label>
@@ -29,8 +37,10 @@
         <div class="mb-3">
             <label asp-for="Genero" class="form-label">Género</label>
             <select asp-for="Genero" class="form-select" id="generoSelect">
-                <option value="hombre" selected="@(Model.Genero == "hombre")">Hombre</option>
-                <option value="dama" selected="@(Model.Genero == "dama")">Dama</option>
+                @foreach (var genero in ViewBag.Generos)
+                {
+                    <option value="@genero.Value" selected="@genero.Selected">@genero.Text</option>
+                }
             </select>
             <span asp-validation-for="Genero" class="text-danger"></span>
         </div>
@@ -51,17 +61,23 @@
         <div class="mb-3" id="tallasSection">
             <h5>Stock por Tallas</h5>
             <div id="tallasContainer">
-                @foreach (var talla in Model.Tallas.OrderBy(t => t.Talla))
-                {
-                    <div class="row mb-2">
-                        <div class="col-md-2">
-                            <label class="form-label">Talla @talla.Talla</label>
+                @{
+                    var tallasDict = Model.Tallas?.ToDictionary(t => t.Talla, t => t.Cantidad) ?? new Dictionary<string, int>();
+                    var tallasDisponibles = ViewBag.TallasDisponibles as string[] ?? new string[0];
+                    
+                    foreach (var talla in tallasDisponibles)
+                    {
+                        var cantidad = tallasDict.ContainsKey(talla) ? tallasDict[talla] : 0;
+                        <div class="row mb-2">
+                            <div class="col-md-2">
+                                <label class="form-label">Talla @talla</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" name="tallas[@talla]" class="form-control talla-input" 
+                                       min="0" value="@cantidad" data-talla="@talla" />
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <input type="number" name="tallas[@talla.Talla]" class="form-control talla-input" min="0"
-                                value="@talla.Cantidad" data-talla="@talla.Talla" />
-                        </div>
-                    </div>
+                    }
                 }
             </div>
             <div class="mt-2">
@@ -74,21 +90,19 @@
             <div class="row">
                 <div class="col-md-4">
                     <label class="form-label">Ganancia por Unidad</label>
-                    <input type="text" class="form-control" id="gananciaUnidad"
-                        value="@Model.GananciaPorUnidad.ToString("N0", new System.Globalization.CultureInfo("es-CO"))"
-                        readonly />
+                    <input type="text" class="form-control" id="gananciaUnidad" 
+                           value="@((Model.PrecioVenta - Model.Costo).ToString("N0"))" readonly />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Ganancia Total</label>
-                    <input type="text" class="form-control" id="gananciaTotal"
-                        value="@Model.GananciaTotal.ToString("N0", new System.Globalization.CultureInfo("es-CO"))"
-                        readonly />
+                    <input type="text" class="form-control" id="gananciaTotal" 
+                           value="@((Model.PrecioVenta - Model.Costo) * Model.Cantidad).ToString("N0"))" readonly />
                 </div>
             </div>
         </div>
 
         <div class="mb-3">
-            <button type="submit" class="btn btn-success">
+            <button type="button" class="btn btn-success" onclick="validarClave()">
                 <i class="bi bi-save"></i> Guardar Cambios
             </button>
             <a asp-action="Index" class="btn btn-secondary">
@@ -98,53 +112,40 @@
     </form>
 </div>
 
+<!-- Modal para clave de seguridad -->
+<div class="modal fade" id="claveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar cambios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="claveInput" class="form-label">Ingrese la clave de seguridad:</label>
+                    <input type="password" class="form-control" id="claveInput">
+                    <div id="claveError" class="text-danger" style="display: none;">Clave incorrecta</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmarCambios()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Definir la contraseña como variable JavaScript
+            const deletePassword = "3T2025";
+            
             const formatoMoneda = new Intl.NumberFormat('es-CO', {
                 style: 'decimal',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            });
-
-            // Tallas por género
-            const tallasPorGenero = {
-                'hombre': ['40', '41', '42', '43', '44', '45'],
-                'dama': ['35', '36', '37', '38', '39', '40']
-            };
-
-            // Manejador de cambio en el select de género
-            document.getElementById('generoSelect').addEventListener('change', function () {
-                const genero = this.value;
-                const tallasContainer = document.getElementById('tallasContainer');
-
-                if (genero && tallasPorGenero[genero]) {
-                    tallasContainer.innerHTML = '';
-
-                    // Crear inputs para cada talla
-                    tallasPorGenero[genero].forEach(talla => {
-                        // Verificar si ya existe una talla con este valor
-                        const inputExistente = document.querySelector(`input[name="tallas[${talla}]"]`);
-                        const valorExistente = inputExistente ? inputExistente.value : 0;
-
-                        const div = document.createElement('div');
-                        div.className = 'row mb-2';
-                        div.innerHTML = `
-                                <div class="col-md-2">
-                                    <label class="form-label">Talla ${talla}</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
-                                           min="0" value="${valorExistente}" data-talla="${talla}" />
-                                </div>
-                            `;
-                        tallasContainer.appendChild(div);
-                    });
-
-                    // Calcular total inicial
-                    calcularTotalStock();
-                }
             });
 
             // Calcular ganancias
@@ -175,13 +176,30 @@
             // Event listeners
             document.getElementById('costoInput').addEventListener('input', calcularGanancias);
             document.getElementById('precioVentaInput').addEventListener('input', calcularGanancias);
-
-            // Delegación de eventos para los inputs de tallas
             document.getElementById('tallasContainer').addEventListener('input', function (e) {
                 if (e.target.classList.contains('talla-input')) {
                     calcularTotalStock();
                 }
             });
+
+            // Validar clave de seguridad
+            window.validarClave = function() {
+                // Mostrar modal para ingresar clave
+                var modal = new bootstrap.Modal(document.getElementById('claveModal'));
+                modal.show();
+            };
+
+            window.confirmarCambios = function() {
+                const claveIngresada = document.getElementById('claveInput').value;
+                const claveError = document.getElementById('claveError');
+
+                if (claveIngresada === deletePassword) {
+                    document.getElementById('claveSeguridad').value = claveIngresada;
+                    document.getElementById('productoForm').submit();
+                } else {
+                    claveError.style.display = 'block';
+                }
+            };
 
             // Calcular valores iniciales
             calcularGanancias();
