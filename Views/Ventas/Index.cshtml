@@ -124,7 +124,6 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
                             <th>Fecha</th>
                             <th>Cliente</th>
                             <th class="text-end">Total</th>
@@ -136,7 +135,6 @@
                         @foreach (var item in Model)
                         {
                             <tr>
-                                <td>@item.Id</td>
                                 <td>@item.FechaVenta.ToString("g")</td>
                                 <td>@(item.Cliente?.Nombre ?? "Público general")</td>
                                 <td class="text-end">@item.Total.ToString("C")</td>

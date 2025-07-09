@@ -46,10 +46,12 @@ namespace Tenis3t.Controllers
                 inventarios = inventarios.Where(i => i.Genero == genero);
             }
 
+            // ORDENAR POR NOMBRE DE FORMA ASCENDENTE (A-Z)
+            inventarios = inventarios.OrderBy(i => i.Nombre);
+
             // Pasar los filtros actuales a la vista
             ViewBag.FiltroNombre = nombre;
             ViewBag.FiltroGenero = genero;
-
             return View(await inventarios.ToListAsync());
         }
 

@@ -154,6 +154,7 @@ namespace Tenis3t.Controllers
 
             var productosDisponibles = await _context.Inventarios
                 .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
+                .OrderBy(i => i.Nombre) // <- Añade esta línea para ordenar alfabéticamente
                 .Select(i => new ProductoDisponibleViewModel
                 {
                     Id = i.Id,
@@ -168,6 +169,7 @@ namespace Tenis3t.Controllers
 
             return View(new VentaViewModel());
         }
+
         // POST: Ventas/Create (Paso 1: Guardar productos y pasar a métodos de pago)
         [HttpPost]
         [ValidateAntiForgeryToken]
