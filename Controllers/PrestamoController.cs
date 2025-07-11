@@ -281,121 +281,121 @@ namespace Tenis3t.Controllers
         }
 
         // POST: Prestamo/Devolver/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Devolver(int id)
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Devolver(int id)
+{
+    var currentUser = await _userManager.GetUserAsync(User);
+
+    try
+    {
+        var prestamo = await _context.Prestamos
+            .Include(p => p.TallaInventario)
+                .ThenInclude(ti => ti.Inventario)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (prestamo == null)
         {
-            var currentUser = await _userManager.GetUserAsync(User);
-
-            try
-            {
-                // Obtener el préstamo con sus relaciones
-                var prestamo = await _context.Prestamos
-                    .Include(p => p.TallaInventario)
-                        .ThenInclude(ti => ti.Inventario)
-                    .FirstOrDefaultAsync(p => p.Id == id);
-
-                if (prestamo == null)
-                {
-                    TempData["ErrorMessage"] = "Préstamo no encontrado";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Verificar que el usuario actual es el prestamista o receptor
-                if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
-                {
-                    TempData["ErrorMessage"] = "No tienes permiso para devolver este préstamo";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Verificar que el préstamo no esté ya devuelto
-                if (prestamo.Estado == "Devuelto")
-                {
-                    TempData["WarningMessage"] = "Este préstamo ya ha sido devuelto";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Determinar quién está devolviendo (prestamista o receptor)
-                bool esPrestamista = prestamo.UsuarioPrestamistaId == currentUser.Id;
-
-                using var transaction = await _context.Database.BeginTransactionAsync();
-
-                try
-                {
-                    // Actualizar el estado del préstamo
-                    prestamo.Estado = "Devuelto";
-                    _context.Update(prestamo);
-
-                    if (esPrestamista)
-                    {
-                        // Si el prestamista está devolviendo (cancelando el préstamo)
-                        // Devolver la cantidad al inventario del prestamista
-                        prestamo.TallaInventario.Cantidad += prestamo.Cantidad;
-                        _context.Update(prestamo.TallaInventario);
-                    }
-                    else
-                    {
-                        // Si el receptor está devolviendo
-                        // Buscar el producto en el inventario del prestamista
-                        var inventarioPrestamista = await _context.Inventarios
-                            .FirstOrDefaultAsync(i => i.UsuarioId == prestamo.UsuarioPrestamistaId &&
-                                                   i.Nombre == prestamo.TallaInventario.Inventario.Nombre);
-
-                        if (inventarioPrestamista == null)
-                        {
-                            // Si el prestamista ya no tiene el producto, crearlo
-                            inventarioPrestamista = new Inventario
-                            {
-                                Nombre = prestamo.TallaInventario.Inventario.Nombre,
-                                UsuarioId = prestamo.UsuarioPrestamistaId
-                            };
-                            _context.Add(inventarioPrestamista);
-                            await _context.SaveChangesAsync(); // Guardar para obtener el ID
-                        }
-
-                        // Buscar la talla en el inventario del prestamista
-                        var tallaPrestamista = await _context.TallasInventario
-                            .FirstOrDefaultAsync(t => t.InventarioId == inventarioPrestamista.Id &&
-                                                   t.Talla == prestamo.TallaInventario.Talla);
-
-                        if (tallaPrestamista == null)
-                        {
-                            // Si no existe la talla, crearla
-                            tallaPrestamista = new TallaInventario
-                            {
-                                InventarioId = inventarioPrestamista.Id,
-                                Talla = prestamo.TallaInventario.Talla,
-                                Cantidad = prestamo.Cantidad
-                            };
-                            _context.Add(tallaPrestamista);
-                        }
-                        else
-                        {
-                            // Si existe, incrementar la cantidad
-                            tallaPrestamista.Cantidad += prestamo.Cantidad;
-                            _context.Update(tallaPrestamista);
-                        }
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    TempData["SuccessMessage"] = "Préstamo devuelto exitosamente";
-                    return RedirectToAction(nameof(Index));
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al devolver préstamo");
-                TempData["ErrorMessage"] = "Error al devolver el préstamo";
-                return RedirectToAction(nameof(Index));
-            }
+            TempData["ErrorMessage"] = "Préstamo no encontrado";
+            return RedirectToAction(nameof(Index));
         }
+
+        // Verificar permisos
+        if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
+        {
+            TempData["ErrorMessage"] = "No tienes permiso para devolver este préstamo";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (prestamo.Estado != "Prestado")
+        {
+            TempData["WarningMessage"] = $"Este préstamo ya ha sido {prestamo.Estado.ToLower()}";
+            return RedirectToAction(nameof(Index));
+        }
+
+        bool esPrestamista = prestamo.UsuarioPrestamistaId == currentUser.Id;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            prestamo.Estado = "Devuelto";
+            _context.Update(prestamo);
+
+            if (esPrestamista)
+            {
+                // Devolver al inventario del prestamista
+                prestamo.TallaInventario.Cantidad += prestamo.Cantidad;
+                _context.Update(prestamo.TallaInventario);
+            }
+            else
+            {
+                // Receptor devolviendo - agregar al inventario del receptor
+                var nombreProducto = prestamo.TallaInventario.Inventario.Nombre;
+                var generoProducto = prestamo.TallaInventario.Inventario.Genero;
+                var tallaProducto = prestamo.TallaInventario.Talla;
+
+                // Buscar o crear el producto en el inventario del receptor
+                var inventarioReceptor = await _context.Inventarios
+                    .FirstOrDefaultAsync(i => i.UsuarioId == currentUser.Id &&
+                                           i.Nombre == nombreProducto &&
+                                           i.Genero == generoProducto);
+
+                if (inventarioReceptor == null)
+                {
+                    inventarioReceptor = new Inventario
+                    {
+                        Nombre = nombreProducto,
+                        Genero = generoProducto,
+                        UsuarioId = currentUser.Id,
+                        Costo = 0, // No sabemos el costo original
+                        PrecioVenta = prestamo.TallaInventario.Inventario.PrecioVenta
+                    };
+                    _context.Add(inventarioReceptor);
+                    await _context.SaveChangesAsync(); // Guardar para obtener el ID
+                }
+
+                // Buscar o crear la talla en el inventario del receptor
+                var tallaReceptor = await _context.TallasInventario
+                    .FirstOrDefaultAsync(t => t.InventarioId == inventarioReceptor.Id &&
+                                           t.Talla == tallaProducto);
+
+                if (tallaReceptor == null)
+                {
+                    tallaReceptor = new TallaInventario
+                    {
+                        InventarioId = inventarioReceptor.Id,
+                        Talla = tallaProducto,
+                        Cantidad = prestamo.Cantidad
+                    };
+                    _context.Add(tallaReceptor);
+                }
+                else
+                {
+                    tallaReceptor.Cantidad += prestamo.Cantidad;
+                    _context.Update(tallaReceptor);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            TempData["SuccessMessage"] = "Préstamo devuelto exitosamente";
+            return RedirectToAction(nameof(Index));
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error al devolver préstamo");
+        TempData["ErrorMessage"] = "Error al devolver el préstamo";
+        return RedirectToAction(nameof(Index));
+    }
+}
 
         // GET: Prestamo/Devolver/5
         public async Task<IActionResult> Devolver(int? id)
@@ -493,6 +493,68 @@ namespace Tenis3t.Controllers
         }
 
         // Método para obtener tallas de un producto (AJAX)
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcarComoVendido(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+
+            try
+            {
+                var prestamo = await _context.Prestamos
+                    .Include(p => p.TallaInventario)
+                        .ThenInclude(ti => ti.Inventario)
+                    .FirstOrDefaultAsync(p => p.Id == id);
+
+                if (prestamo == null)
+                {
+                    TempData["ErrorMessage"] = "Préstamo no encontrado";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Verificar permisos
+                if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
+                {
+                    TempData["ErrorMessage"] = "No tienes permiso para esta acción";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Verificar que el préstamo no esté ya devuelto o vendido
+                if (prestamo.Estado != "Prestado")
+                {
+                    TempData["WarningMessage"] = $"Este préstamo ya ha sido {prestamo.Estado.ToLower()}";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Marcar como vendido (no devolvemos al inventario)
+                    prestamo.Estado = "Vendido";
+                    _context.Update(prestamo);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    TempData["SuccessMessage"] = "Préstamo marcado como vendido exitosamente";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al marcar préstamo como vendido");
+                TempData["ErrorMessage"] = "Error al marcar el préstamo como vendido";
+                return RedirectToAction(nameof(Index));
+            }
+        }
 
     }
 }

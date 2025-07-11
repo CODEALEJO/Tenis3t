@@ -17,9 +17,12 @@
 
     <div class="mb-4">
         <div class="btn-group btn-group-sm mb-2" role="group">
-            <a asp-action="Index" asp-route-filtro="todos" class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
-            <a asp-action="Index" asp-route-filtro="realizados" class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
-            <a asp-action="Index" asp-route-filtro="recibidos" class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
+            <a asp-action="Index" asp-route-filtro="todos"
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
+            <a asp-action="Index" asp-route-filtro="realizados"
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
+            <a asp-action="Index" asp-route-filtro="recibidos"
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
         </div>
         <a asp-action="Create" class="btn btn-success btn-sm float-end">Nuevo Préstamo</a>
     </div>

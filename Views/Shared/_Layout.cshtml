@@ -47,9 +47,19 @@
                         <a class="nav-link btn btn-success mx-2 text-white" asp-controller="Prestamo" asp-action="Index">
                             <i class="bi bi-arrow-left-right"></i> Préstamos
                         </a>
-                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline"><button
-                                type="submit" class="nav-link btn btn-danger mx-2 text-white"><i
-                                    class="bi bi-box-arrow-right"></i> Cerrar Sesión</button></form>
+                        
+                        @if (User.Identity.Name == "3T")
+                        {
+                            <a class="nav-link btn btn-info mx-2 text-white" asp-controller="Exhibiciones" asp-action="Index">
+                                <i class="bi bi-display"></i> Exhibiciones
+                            </a>
+                        }
+                        
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <button type="submit" class="nav-link btn btn-danger mx-2 text-white">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </button>
+                        </form>
                     </div>
                 </div>
             </nav>
