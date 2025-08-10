@@ -1,0 +1,617 @@
+@model Tenis3t.Models.Venta
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Crear Nueva Venta" : "Editar Venta";
+}
+
+<div class="container mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mx-auto" style="max-width: 800px;" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mx-auto" style="max-width: 800px;" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <h2>@ViewData["Title"]</h2>
+
+    <form asp-action="@(Model.Id == 0 ? "CreateEdit" : "CreateEdit")" method="post" id="ventaForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label asp-for="NombreCliente" class="form-label">Cliente</label>
+                    <input asp-for="NombreCliente" class="form-control" />
+                    <span asp-validation-for="NombreCliente" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label asp-for="FechaVenta" class="form-label">Fecha de Venta</label>
+                    <input asp-for="FechaVenta" type="datetime-local" class="form-control"
+                        value="@Model.FechaVenta.ToString("yyyy-MM-ddTHH:mm")" />
+                    <span asp-validation-for="FechaVenta" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+        <h4>Productos</h4>
+        <div id="detallesContainer">
+            @for (int i = 0; i < Model.Detalles.Count; i++)
+            {
+                <div class="detalle-item mb-3 border p-3 rounded">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Producto</label>
+                            <select asp-for="Detalles[i].InventarioId" class="form-control producto-select" data-index="@i"
+                                onchange="cargarTallas(this)" required>
+                                <option value="">Seleccione un producto</option>
+                                @foreach (var item in
+                                                            (IEnumerable<ProductoDisponibleViewModel>)ViewBag.ProductosDisponibles)
+                                {
+                                    <option value="@item.Id" data-precio="@item.PrecioVenta" data-producto="@item.Nombre">
+                                        @item.Nombre
+                                    </option>
+                                }
+                            </select>
+                            <input type="hidden" asp-for="Detalles[i].PrecioUnitario" class="precio-producto" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Talla</label>
+                            <select asp-for="Detalles[i].TallaInventarioId" class="form-control talla-select"
+                                data-index="@i" onchange="actualizarDisponibilidad(this)" required>
+                                <option value="">Seleccione talla</option>
+                            </select>
+                            <span class="text-muted small disponibilidad-text"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cantidad</label>
+                            <input asp-for="Detalles[i].Cantidad" type="number" min="1" class="form-control cantidad"
+                                onchange="actualizarSubtotal(this)" required />
+                            <span asp-validation-for="Detalles[i].Cantidad" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Precio Unitario</label>
+                            <input type="text" class="form-control precio" readonly
+                                value="@Model.Detalles[i].PrecioUnitario.ToString("N0")" />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">Subtotal</label>
+                            <input class="form-control subtotal" readonly
+                                value="@((Model.Detalles[i].Cantidad * Model.Detalles[i].PrecioUnitario).ToString("N0"))" />
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-detalle">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" asp-for="Detalles[i].Id" />
+                </div>
+            }
+        </div>
+
+        <button type="button" id="btnAddDetalle" class="btn btn-outline-primary mb-3">
+            <i class="bi bi-plus-circle"></i> Agregar Producto
+        </button>
+
+        <hr />
+        <h4>Métodos de Pago</h4>
+        <div id="pagosContainer">
+            @for (int i = 0; i < Model.Pagos.Count; i++)
+            {
+                <div class="pago-item mb-3 border p-3 rounded">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Método de Pago</label>
+                            <select asp-for="Pagos[i].MetodoPagoId" class="form-control select-metodo"
+                                asp-items="@(new SelectList(ViewBag.MetodosPago, "Id", "Nombre"))" required>
+                                <option value="">Seleccione método</option>
+                            </select>
+                            <span asp-validation-for="Pagos[i].MetodoPagoId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Valor</label>
+                            <input asp-for="Pagos[i].Monto" type="number" min="0" step="0.01"
+                                class="form-control valor-pago" required />
+                            <span asp-validation-for="Pagos[i].Monto" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-text">
+                                @{
+                                    var metodoPago = (ViewBag.MetodosPago as IEnumerable<MetodoPago>)?.FirstOrDefault(m => m.Id
+                                    == Model.Pagos[i].MetodoPagoId);
+                                }
+                                @metodoPago?.Nombre
+                            </div>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-pago">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" asp-for="Pagos[i].Id" />
+                </div>
+            }
+        </div>
+
+        <button type="button" id="btnAddPago" class="btn btn-outline-primary mb-3">
+            <i class="bi bi-plus-circle"></i> Agregar Método de Pago
+        </button>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Descuento" class="form-label">Descuento (%)</label>
+                            <input asp-for="Descuento" type="number" min="0" max="100" step="1" class="form-control"
+                                id="descuentoInput" />
+                            <span asp-validation-for="Descuento" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="text-end">
+                            @{
+                                var subtotal = Model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
+                                var descuento = subtotal * (Model.Descuento / 100);
+                                var total = subtotal - descuento;
+                                var totalPagado = Model.Pagos.Sum(p => p.Monto);
+                                var saldoPendiente = total - totalPagado;
+                            }
+                            <h5>Subtotal: <span id="subtotalVenta">@subtotal.ToString("N0")</span></h5>
+                            <h5>Descuento: <span id="descuentoAplicado">@descuento.ToString("N0")</span> (<span
+                                    id="porcentajeDescuento">@Model.Descuento</span>%)</h5>
+                            <h4>Total Venta: <span id="totalVenta">@total.ToString("N0")</span></h4>
+                            <h5>Total Pagado: <span id="totalPagado">@totalPagado.ToString("N0")</span></h5>
+                            <h5>Saldo Pendiente: <span id="saldoPendiente">@saldoPendiente.ToString("N0")</span></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save"></i> @(Model.Id == 0 ? "Guardar Venta" : "Actualizar Venta")
+            </button>
+            <a asp-action="Index" class="btn btn-danger">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function () {
+            // Contador para nuevos detalles
+            let detalleIndex = @Model.Detalles.Count;
+            // Contador para nuevos pagos
+            let pagoIndex = @Model.Pagos.Count;
+
+            // Formateador de moneda
+            const formatoMoneda = new Intl.NumberFormat('es-CO', {
+                style: 'decimal',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+
+            // Cargar productos disponibles en variable global
+            var productosDisponibles = @Html.Raw(Json.Serialize(ViewBag.ProductosDisponibles ?? new List<ProductoDisponibleViewModel>()));
+
+            // Función mejorada para cargar las tallas
+            function cargarTallas(select) {
+                try {
+                    const detalleItem = $(select).closest('.detalle-item');
+                    const productoId = $(select).val();
+                    const tallaSelect = detalleItem.find('.talla-select');
+                    const precio = $(select).find('option:selected').data('precio');
+                    
+                    if (!precio) {
+                        console.error('No se encontró precio para el producto seleccionado');
+                        return;
+                    }
+                    
+                    // Guardar el precio en el campo oculto
+                    detalleItem.find('.precio-producto').val(precio);
+                    detalleItem.find('.precio').val(formatoMoneda.format(precio));
+                    
+                    // Limpiar y cargar las tallas disponibles
+                    tallaSelect.empty().append('<option value="">Seleccione talla</option>');
+                    
+                    if (!productoId) {
+                        return;
+                    }
+                    
+                    // Buscar el producto seleccionado
+                    const producto = productosDisponibles.find(p => p.id == parseInt(productoId));
+                    
+                    if (!producto) {
+                        console.error('Producto no encontrado en la lista de disponibles');
+                        tallaSelect.append(
+                            $('<option></option>')
+                                .attr('value', '')
+                                .text('Producto no disponible')
+                                .prop('disabled', true)
+                        );
+                        return;
+                    }
+                    
+                    if (!producto.tallas || producto.tallas.length === 0) {
+                        tallaSelect.append(
+                            $('<option></option>')
+                                .attr('value', '')
+                                .text('No hay tallas disponibles')
+                                .prop('disabled', true)
+                        );
+                        return;
+                    }
+                    
+                    // Cargar las tallas disponibles
+                    producto.tallas.forEach(talla => {
+                        tallaSelect.append(
+                            $(`<option></option>`)
+                                .attr('value', talla.id)
+                                .attr('data-cantidad', talla.cantidad)
+                                .text(`${talla.talla} (Disponible: ${talla.cantidad})`)
+                        );
+                    });
+                    
+                    // Resetear cantidad y subtotal
+                    detalleItem.find('.cantidad').val('1');
+                    detalleItem.find('.subtotal').val(formatoMoneda.format(precio));
+                    calcularTotal();
+                } catch (error) {
+                    console.error('Error en cargarTallas:', error);
+                }
+            }
+
+            // Función para actualizar la información de disponibilidad
+            function actualizarDisponibilidad(select) {
+                const detalleItem = $(select).closest('.detalle-item');
+                const cantidadDisponible = $(select).find('option:selected').data('cantidad') || 0;
+                const disponibilidadText = detalleItem.find('.disponibilidad-text');
+
+                disponibilidadText.text(`Disponible: ${cantidadDisponible}`);
+
+                // Actualizar el máximo permitido en la cantidad
+                const cantidadInput = detalleItem.find('.cantidad');
+                cantidadInput.attr('max', cantidadDisponible);
+
+                // Si la cantidad actual es mayor que el nuevo máximo, ajustarla
+                if (parseInt(cantidadInput.val()) > cantidadDisponible) {
+                    cantidadInput.val(cantidadDisponible);
+                }
+
+                actualizarSubtotal(cantidadInput);
+            }
+
+            // Función para actualizar el subtotal cuando cambia la cantidad
+            function actualizarSubtotal(input) {
+                const detalleItem = $(input).closest('.detalle-item');
+                const precio = parseFloat(detalleItem.find('.precio-producto').val()) || 0;
+                const cantidad = parseFloat($(input).val()) || 0;
+                const subtotal = cantidad * precio;
+
+                detalleItem.find('.subtotal').val(formatoMoneda.format(subtotal));
+                calcularTotal();
+            }
+
+            // Agregar nuevo detalle (producto)
+            $('#btnAddDetalle').click(function () {
+                const newDetalleHtml = `
+                <div class="detalle-item mb-3 border p-3 rounded">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Producto</label>
+                            <select name="Detalles[${detalleIndex}].InventarioId" class="form-control producto-select" 
+                                    data-index="${detalleIndex}" onchange="cargarTallas(this)" required>
+                                <option value="">Seleccione un producto</option>
+                                @foreach (var item in (IEnumerable<ProductoDisponibleViewModel>)ViewBag.ProductosDisponibles)
+                                {
+                                    <option value="@item.Id" 
+                                            data-precio="@item.PrecioVenta"
+                                            data-producto="@item.Nombre">
+                                        @item.Nombre
+                                    </option>
+                                }
+                            </select>
+                            <input type="hidden" name="Detalles[${detalleIndex}].PrecioUnitario" class="precio-producto" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Talla</label>
+                            <select name="Detalles[${detalleIndex}].TallaInventarioId" class="form-control talla-select" 
+                                    data-index="${detalleIndex}" onchange="actualizarDisponibilidad(this)" required>
+                                <option value="">Seleccione talla</option>
+                            </select>
+                            <span class="text-muted small disponibilidad-text"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cantidad</label>
+                            <input name="Detalles[${detalleIndex}].Cantidad" type="number" min="1" class="form-control cantidad" 
+                                   onchange="actualizarSubtotal(this)" required />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Precio Unitario</label>
+                            <input type="text" class="form-control precio" readonly value="0" />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">Subtotal</label>
+                            <input class="form-control subtotal" readonly value="0" />
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-detalle">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="Detalles[${detalleIndex}].Id" value="0" />
+                </div>`;
+                
+                $('#detallesContainer').append(newDetalleHtml);
+                detalleIndex++;
+                $.validator.unobtrusive.parse($('#ventaForm'));
+            });
+
+            // Agregar nuevo pago
+            $('#btnAddPago').click(function () {
+                const newPagoHtml = `
+                <div class="pago-item mb-3 border p-3 rounded">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Método de Pago</label>
+                            <select name="Pagos[${pagoIndex}].MetodoPagoId" class="form-control select-metodo" required>
+                                <option value="">Seleccione método</option>
+                                @foreach (var metodo in ViewBag.MetodosPago as List<MetodoPago>)
+                                {
+                                    <option value="@metodo.Id">@metodo.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Valor</label>
+                            <input name="Pagos[${pagoIndex}].Monto" type="number" min="0" step="0.01" 
+                                   class="form-control valor-pago" required />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-text"></div>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-pago">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="Pagos[${pagoIndex}].Id" value="0" />
+                </div>`;
+
+                $('#pagosContainer').append(newPagoHtml);
+                pagoIndex++;
+                $.validator.unobtrusive.parse($('#ventaForm'));
+
+                // Configurar evento change para el select de método de pago
+                const selectMetodo = $('#pagosContainer .select-metodo').last();
+                selectMetodo.change(function () {
+                    const metodoNombre = $(this).find('option:selected').text();
+                    $(this).closest('.pago-item').find('.form-text').text(metodoNombre);
+                });
+            });
+
+            // Eliminar detalle
+            $(document).on('click', '.btn-remove-detalle', function () {
+                $(this).closest('.detalle-item').remove();
+                recalcularIndicesDetalles();
+                calcularTotal();
+            });
+
+            // Eliminar pago
+            $(document).on('click', '.btn-remove-pago', function () {
+                $(this).closest('.pago-item').remove();
+                recalcularIndicesPagos();
+                calcularTotal();
+            });
+
+            // Función para calcular el total
+            function calcularTotal() {
+                let subtotal = 0;
+
+                // Calcular subtotal de productos
+                $('.detalle-item').each(function () {
+                    const subtotalStr = $(this).find('.subtotal').val().replace(/\./g, '');
+                    subtotal += parseFloat(subtotalStr) || 0;
+                });
+
+                // Aplicar descuento
+                const descuentoPorcentaje = parseFloat($('#descuentoInput').val()) || 0;
+                const descuento = (subtotal * descuentoPorcentaje) / 100;
+                const total = subtotal - descuento;
+
+                // Calcular total pagado
+                let totalPagado = 0;
+                $('.valor-pago').each(function () {
+                    totalPagado += parseFloat($(this).val()) || 0;
+                });
+
+                const saldoPendiente = total - totalPagado;
+
+                // Actualizar UI
+                $('#subtotalVenta').text(formatoMoneda.format(subtotal));
+                $('#descuentoAplicado').text(formatoMoneda.format(descuento));
+                $('#porcentajeDescuento').text(descuentoPorcentaje);
+                $('#totalVenta').text(formatoMoneda.format(total));
+                $('#totalPagado').text(formatoMoneda.format(totalPagado));
+                $('#saldoPendiente').text(formatoMoneda.format(saldoPendiente));
+
+                // Resaltar saldo pendiente
+                if (saldoPendiente > 0) {
+                    $('#saldoPendiente').addClass('text-danger').removeClass('text-success');
+                } else if (saldoPendiente < 0) {
+                    $('#saldoPendiente').addClass('text-warning').removeClass('text-success');
+                } else {
+                    $('#saldoPendiente').addClass('text-success').removeClass('text-danger');
+                }
+            }
+
+            // Recalcular índices después de eliminar un detalle
+            function recalcularIndicesDetalles() {
+                detalleIndex = 0;
+                $('.detalle-item').each(function (index) {
+                    $(this).find('input, select').each(function () {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            $(this).attr('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        }
+                    });
+                    detalleIndex++;
+                });
+            }
+
+            // Recalcular índices después de eliminar un pago
+            function recalcularIndicesPagos() {
+                pagoIndex = 0;
+                $('.pago-item').each(function (index) {
+                    $(this).find('input, select').each(function () {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            $(this).attr('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        }
+                    });
+                    pagoIndex++;
+                });
+            }
+
+            // Inicializar eventos para selects de método de pago existentes
+            $('.select-metodo').each(function () {
+                const metodoNombre = $(this).find('option:selected').text();
+                $(this).closest('.pago-item').find('.form-text').text(metodoNombre);
+
+                $(this).change(function () {
+                    const metodoNombre = $(this).find('option:selected').text();
+                    $(this).closest('.pago-item').find('.form-text').text(metodoNombre);
+                });
+            });
+
+            // Para los detalles existentes, cargar las tallas correspondientes
+            $('.producto-select').each(function() {
+                if ($(this).val()) {
+                    // Disparar el evento change después de un pequeño retraso
+                    setTimeout(() => {
+                        cargarTallas(this);
+                        
+                        // Seleccionar la talla guardada si existe
+                        const detalleItem = $(this).closest('.detalle-item');
+                        const tallaId = detalleItem.find('.talla-select').attr('value');
+                        if (tallaId) {
+                            detalleItem.find('.talla-select').val(tallaId);
+                            actualizarDisponibilidad(detalleItem.find('.talla-select'));
+                        }
+                    }, 100);
+                }
+            });
+
+            // Calcular total inicial
+            calcularTotal();
+
+            // Validar formulario antes de enviar
+            $('#ventaForm').submit(function (e) {
+                if ($('.detalle-item').length === 0) {
+                    e.preventDefault();
+                    alert('Debe agregar al menos un producto');
+                    return false;
+                }
+
+                if ($('.pago-item').length === 0) {
+                    e.preventDefault();
+                    alert('Debe agregar al menos un método de pago');
+                    return false;
+                }
+
+                // Validar que todos los detalles tengan talla seleccionada
+                let tallasValidas = true;
+                $('.talla-select').each(function() {
+                    if (!$(this).val()) {
+                        tallasValidas = false;
+                        $(this).addClass('is-invalid');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                if (!tallasValidas) {
+                    e.preventDefault();
+                    alert('Debe seleccionar una talla para todos los productos');
+                    return false;
+                }
+
+                // Validar que el total pagado no supere el total de la venta
+                const totalVenta = parseFloat($('#totalVenta').text().replace(/\./g, ''));
+                const totalPagado = parseFloat($('#totalPagado').text().replace(/\./g, '')) || 0;
+
+                if (totalPagado > totalVenta) {
+                    e.preventDefault();
+                    alert('El total pagado no puede ser mayor que el total de la venta');
+                    return false;
+                }
+
+                return true;
+            });
+        });
+    </script>
+
+    <style>
+        .detalle-item,
+        .pago-item {
+            background-color: #f8f9fa;
+        }
+
+        .subtotal {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+
+        #totalVenta {
+            font-weight: bold;
+            color: #0d6efd;
+            font-size: 1.2rem;
+        }
+
+        .text-danger {
+            color: #dc3545 !important;
+        }
+
+        .text-success {
+            color: #198754 !important;
+        }
+
+        .text-warning {
+            color: #fd7e14 !important;
+        }
+
+        .disponibilidad-text {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.8rem;
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+        }
+    </style>
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">

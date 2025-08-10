@@ -58,27 +58,27 @@ namespace Tenis3t.Data
                 .HasForeignKey(i => i.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configuración de Venta
+            // Configuración para Venta
             modelBuilder.Entity<Venta>(entity =>
             {
-                entity.HasOne(v => v.UsuarioVendedor)
-                    .WithMany()
-                    .HasForeignKey(v => v.UsuarioVendedorId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(v => v.Descuento).HasDefaultValue(0);
+                entity.Property(v => v.Total).HasColumnType("decimal(18,2)");
             });
 
-            // Configuración de DetalleVenta
+            // Configuración para DetalleVenta
             modelBuilder.Entity<DetalleVenta>(entity =>
             {
-                entity.HasOne(d => d.Venta)
-                    .WithMany(v => v.Detalles)
-                    .HasForeignKey(d => d.VentaId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
+                entity.Property(d => d.PrecioUnitario).HasColumnType("decimal(18,2)");
                 entity.HasOne(d => d.TallaInventario)
-                    .WithMany()
-                    .HasForeignKey(d => d.TallaInventarioId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                      .WithMany()
+                      .HasForeignKey(d => d.TallaInventarioId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configuración para Pago
+            modelBuilder.Entity<Pago>(entity =>
+            {
+                entity.Property(p => p.Monto).HasColumnType("decimal(18,2)");
             });
 
             // Cambiar nombre de tabla para TallaInventario

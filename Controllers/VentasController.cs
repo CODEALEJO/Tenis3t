@@ -28,15 +28,12 @@ namespace Tenis3t.Controllers
             _logger = logger;
         }
 
-        // GET: Ventas con búsqueda y filtros avanzados
-        // Reemplaza el método Index en tu VentasController con esta versión corregida
-
         public async Task<IActionResult> Index(
-            string nombreCliente = null,
-            string fechaFiltro = null,
-            int? mesFiltro = null,
-            int? anioFiltro = null,
-            string tipoFiltro = "dia")
+     string nombreCliente = null,
+     string fechaFiltro = null,
+     int? mesFiltro = null,
+     int? anioFiltro = null,
+     string tipoFiltro = "dia")
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
             if (usuarioActual == null)
@@ -44,23 +41,22 @@ namespace Tenis3t.Controllers
                 return Unauthorized();
             }
 
-            // Consulta base con includes 
+            // Consulta base con includes - QUITA EL INCLUDE DE NombreCliente
             var query = _context.Ventas
                 .Include(v => v.UsuarioVendedor)
-                .Include(v => v.Cliente)
                 .Include(v => v.Detalles)
                     .ThenInclude(d => d.TallaInventario)
                         .ThenInclude(t => t.Inventario)
                 .Include(v => v.Pagos)
                     .ThenInclude(p => p.MetodoPago)
                 .Where(v => v.UsuarioVendedorId == usuarioActual.Id)
-                .OrderByDescending(v => v.FechaVenta)  // <-- Añadido aquí para mayor claridad
+                .OrderByDescending(v => v.FechaVenta)
                 .AsQueryable();
 
-            // Filtro por nombre de cliente
+            // Filtro por nombre de cliente (esto sigue siendo válido)
             if (!string.IsNullOrEmpty(nombreCliente))
             {
-                query = query.Where(v => v.Cliente != null && v.Cliente.Nombre.Contains(nombreCliente));
+                query = query.Where(v => v.NombreCliente != null && v.NombreCliente.Contains(nombreCliente));
             }
 
             // Aplicar filtros por fecha según el tipo seleccionado
@@ -147,283 +143,341 @@ namespace Tenis3t.Controllers
         public async Task<IActionResult> Create()
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
-            if (usuarioActual == null)
-            {
-                return Unauthorized();
-            }
+            ViewBag.MetodosPago = await _context.MetodoPagos.ToListAsync();
 
             var productosDisponibles = await _context.Inventarios
+                .Include(i => i.Tallas)
                 .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
-                .OrderBy(i => i.Nombre) // <- Añade esta línea para ordenar alfabéticamente
                 .Select(i => new ProductoDisponibleViewModel
                 {
                     Id = i.Id,
                     Nombre = i.Nombre,
                     PrecioVenta = i.PrecioVenta,
-                    Tallas = i.Tallas.Where(t => t.Cantidad > 0).ToList()
+                    Tallas = i.Tallas.Where(t => t.Cantidad > 0)
+                                    .Select(t => new TallaViewModel
+                                    {
+                                        Id = t.Id,
+                                        Talla = t.Talla,
+                                        Cantidad = t.Cantidad
+                                    }).ToList()
                 })
                 .ToListAsync();
 
             ViewBag.ProductosDisponibles = productosDisponibles;
-            ViewBag.InventarioDisponible = productosDisponibles; // Para el JavaScript
 
-            return View(new VentaViewModel());
+            return View("CreateEdit", new Venta
+            {
+                FechaVenta = DateTime.Now,
+                Descuento = 0,
+                Detalles = new List<DetalleVenta>(),
+                Pagos = new List<Pago>()
+            });
         }
 
-        // POST: Ventas/Create (Paso 1: Guardar productos y pasar a métodos de pago)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(VentaViewModel model)
+        public async Task<IActionResult> Edit(int? id)
         {
+            if (id == null) return NotFound();
+
+            ViewBag.MetodosPago = await _context.MetodoPagos.ToListAsync();
+
             var usuarioActual = await _userManager.GetUserAsync(User);
-            if (usuarioActual == null)
+            var venta = await _context.Ventas
+                .Include(v => v.Detalles)
+                    .ThenInclude(d => d.TallaInventario)
+                        .ThenInclude(t => t.Inventario)
+                .Include(v => v.Pagos)
+                    .ThenInclude(p => p.MetodoPago)
+                .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
+
+            if (venta == null) return NotFound();
+            if (venta.Estado != "Completada")
             {
-                return Unauthorized();
+                TempData["ErrorMessage"] = "Solo se pueden editar ventas completadas";
+                return RedirectToAction(nameof(Index));
             }
 
-            var inventarioDisponible = await _context.Inventarios
+            var productosDisponibles = await _context.Inventarios
                 .Include(i => i.Tallas)
-                .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
+                .Where(i => i.UsuarioId == usuarioActual.Id)
+                .Select(i => new ProductoDisponibleViewModel
+                {
+                    Id = i.Id,
+                    Nombre = i.Nombre,
+                    PrecioVenta = i.PrecioVenta,
+                    Tallas = i.Tallas.Select(t => new TallaViewModel
+                    {
+                        Id = t.Id,
+                        Talla = t.Talla,
+                        Cantidad = t.Cantidad
+                    }).ToList()
+                })
                 .ToListAsync();
 
-            ViewBag.InventarioDisponible = inventarioDisponible;
+            ViewBag.ProductosDisponibles = productosDisponibles;
 
-            if (!ModelState.IsValid)
+            return View("CreateEdit", venta);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateEdit(int? id, Venta venta)
+        {
+            var usuarioActual = await _userManager.GetUserAsync(User);
+            bool isEdit = id.HasValue;
+
+            if (isEdit && id != venta.Id) return NotFound();
+
+            // Validaciones básicas (sin cambios)
+            if (venta.Detalles == null || !venta.Detalles.Any())
             {
-                return View(model);
+                ModelState.AddModelError("", "Debe agregar al menos un producto");
+                await CargarProductosDisponibles(usuarioActual.Id);
+                return View("CreateEdit", venta);
             }
 
-            if (model.Detalles == null || !model.Detalles.Any(d => d.TallaInventarioId > 0))
+            if (venta.Pagos == null || !venta.Pagos.Any(p => p.Monto > 0))
             {
-                ModelState.AddModelError("", "Debe seleccionar al menos un producto");
-                return View(model);
+                ModelState.AddModelError("", "Debe agregar al menos un método de pago");
+                await CargarProductosDisponibles(usuarioActual.Id);
+                return View("CreateEdit", venta);
             }
 
+            // Validar stock y calcular totales (sin cambios)
+            decimal subtotal = 0;
             var erroresStock = new List<string>();
-            foreach (var detalle in model.Detalles.Where(d => d.TallaInventarioId > 0))
+
+            foreach (var detalle in venta.Detalles)
             {
                 var talla = await _context.TallasInventario
+                    .Include(t => t.Inventario)
                     .FirstOrDefaultAsync(t => t.Id == detalle.TallaInventarioId);
 
                 if (talla == null)
                 {
-                    erroresStock.Add($"El producto seleccionado (Talla ID: {detalle.TallaInventarioId}) no existe");
+                    erroresStock.Add($"La talla seleccionada ya no existe");
+                    continue;
+                }
+                // Asignar el InventarioId desde la talla
+                detalle.InventarioId = talla.Inventario.Id;
+
+                if (isEdit)
+                {
+                    var detalleOriginal = await _context.DetallesVenta
+                        .FirstOrDefaultAsync(d => d.Id == detalle.Id);
+
+                    if (detalleOriginal != null)
+                    {
+                        var diferencia = detalle.Cantidad - detalleOriginal.Cantidad;
+                        if (talla.Cantidad < diferencia)
+                        {
+                            erroresStock.Add($"No hay suficiente stock para {talla.Inventario.Nombre} - Talla: {talla.Talla}");
+                        }
+                    }
                 }
                 else if (talla.Cantidad < detalle.Cantidad)
                 {
-                    erroresStock.Add($"No hay suficiente stock para {talla.Inventario?.Nombre} - Talla: {talla.Talla} (Solicitado: {detalle.Cantidad}, Disponible: {talla.Cantidad})");
+                    erroresStock.Add($"No hay suficiente stock para {talla.Inventario.Nombre} - Talla: {talla.Talla}");
                 }
+
+                detalle.PrecioUnitario = talla.Inventario.PrecioVenta;
+                subtotal += detalle.PrecioUnitario * detalle.Cantidad;
             }
 
             if (erroresStock.Any())
             {
-                foreach (var error in erroresStock)
-                {
-                    ModelState.AddModelError("", error);
-                }
-                return View(model);
+                erroresStock.ForEach(e => ModelState.AddModelError("", e));
+                await CargarProductosDisponibles(usuarioActual.Id);
+                return View("CreateEdit", venta);
             }
 
-            HttpContext.Session.SetObject("VentaViewModel", model);
-            return RedirectToAction("MetodosPago");
-        }
+            // Validar métodos de pago (sin cambios)
+            decimal totalConDescuento = subtotal * (1 - venta.Descuento / 100m);
+            decimal totalPagado = venta.Pagos.Sum(p => p.Monto);
 
-        // GET: Ventas/MetodosPago
-        public async Task<IActionResult> MetodosPago()
-        {
-            var model = HttpContext.Session.GetObject<VentaViewModel>("VentaViewModel");
-            if (model == null || model.Detalles == null || !model.Detalles.Any())
-            {
-                TempData["ErrorMessage"] = "No se encontraron productos seleccionados";
-                return RedirectToAction("Create");
-            }
-
-            decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
-            ViewBag.TotalVenta = totalVenta;
-
-            var metodosPagoDisponibles = await _context.MetodoPagos
-                .OrderBy(m => m.Nombre)
-                .Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Nombre
-                })
-                .ToListAsync();
-
-            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
-
-            if (model.MetodosPago == null || !model.MetodosPago.Any())
-            {
-                model.MetodosPago = new List<MetodoPagoViewModel>
-                {
-                    new MetodoPagoViewModel()
-                };
-            }
-
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MetodosPago(VentaViewModel model)
-        {
-            var usuarioActual = await _userManager.GetUserAsync(User);
-            if (usuarioActual == null) return Unauthorized();
-
-            var ventaViewModel = HttpContext.Session.GetObject<VentaViewModel>("VentaViewModel");
-            if (ventaViewModel == null || ventaViewModel.Detalles == null || !ventaViewModel.Detalles.Any())
-            {
-                TempData["ErrorMessage"] = "No se encontraron productos seleccionados";
-                return RedirectToAction("Create");
-            }
-
-            decimal totalVenta = ventaViewModel.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
-            ViewBag.TotalVenta = totalVenta;
-
-            // Validar que no haya más de 4 métodos de pago
-            if (model.MetodosPago != null && model.MetodosPago.Count > 4)
-            {
-                ModelState.AddModelError("", "No se pueden agregar más de 4 métodos de pago");
-                return CargarViewBagYRetornarVista(model);
-            }
-
-            // Filtrar solo métodos de pago válidos (con monto > 0 y método seleccionado)
-            var metodosPagoValidos = model.MetodosPago?
-                .Where(m => m.Monto > 0 && m.MetodoPagoId > 0)
-                .ToList() ?? new List<MetodoPagoViewModel>();
-
-            if (!metodosPagoValidos.Any())
-            {
-                ModelState.AddModelError("", "Debe agregar al menos un método de pago");
-                return CargarViewBagYRetornarVista(model);
-            }
-
-            decimal totalPagado = metodosPagoValidos.Sum(mp => mp.Monto);
-            if (Math.Abs(totalPagado - totalVenta) > 0.01m)
+            if (Math.Abs(totalPagado - totalConDescuento) > 0.01m)
             {
                 ModelState.AddModelError("",
-                    $"La suma de los pagos ({totalPagado.ToString("C", new CultureInfo("es-CO"))}) " +
-                    $"no coincide con el total de la venta ({totalVenta.ToString("C", new CultureInfo("es-CO"))})");
-                return CargarViewBagYRetornarVista(model);
+                    $"La suma de pagos ({totalPagado.ToString("C")}) no coincide con el total ({totalConDescuento.ToString("C")})");
+                await CargarProductosDisponibles(usuarioActual.Id);
+                return View("CreateEdit", venta);
             }
 
-            return await ProcesarVenta(ventaViewModel, metodosPagoValidos, usuarioActual.Id);
-        }
-
-        private IActionResult CargarViewBagYRetornarVista(VentaViewModel model)
-        {
-            // Cargar métodos de pago disponibles para el dropdown
-            var metodosPagoDisponibles = _context.MetodoPagos
-                .OrderBy(m => m.Nombre)
-                .Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Nombre
-                })
-                .ToList();
-
-            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
-
-            // Si no hay métodos de pago en el modelo, agregar uno vacío
-            if (model.MetodosPago == null || !model.MetodosPago.Any())
+            // Procesar la venta con manejo de errores mejorado
+            try
             {
-                model.MetodosPago = new List<MetodoPagoViewModel>
-        {
-            new MetodoPagoViewModel()
-        };
-            }
-
-            return View("MetodosPago", model);
-        }
-        private async Task<IActionResult> ProcesarVenta(VentaViewModel model, List<MetodoPagoViewModel> metodosPago, string usuarioId)
-        {
-            decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
-
-            var executionStrategy = _context.Database.CreateExecutionStrategy();
-
-            return await executionStrategy.ExecuteAsync(async () =>
-            {
-                using (var transaction = await _context.Database.BeginTransactionAsync())
+                var executionStrategy = _context.Database.CreateExecutionStrategy();
+                return await executionStrategy.ExecuteAsync(async () =>
                 {
+                    using var transaction = await _context.Database.BeginTransactionAsync();
                     try
                     {
-                        Cliente? cliente = null;
-                        if (!string.IsNullOrEmpty(model.NombreCliente))
+                        if (isEdit)
                         {
-                            cliente = new Cliente
-                            {
-                                Nombre = model.NombreCliente,
-                                Cedula = model.CedulaCliente,
-                                Telefono = model.TelefonoCliente,
-                                Email = model.EmailCliente,
-                            };
-                            _context.Add(cliente);
-                            await _context.SaveChangesAsync();
+                            await ActualizarVentaExistente(venta);
                         }
-
-                        var venta = new Venta
+                        else
                         {
-                            FechaVenta = DateTime.Now,
-                            Estado = "Completada",
-                            UsuarioVendedorId = usuarioId,
-                            ClienteId = cliente?.Id,
-                            Total = totalVenta
-                        };
-                        _context.Add(venta);
-                        await _context.SaveChangesAsync();
-
-                        foreach (var detalle in model.Detalles)
-                        {
-                            var tallaInventario = await _context.TallasInventario
-                                .Include(t => t.Inventario)
-                                .FirstOrDefaultAsync(t => t.Id == detalle.TallaInventarioId);
-
-                            if (tallaInventario == null || tallaInventario.Cantidad < detalle.Cantidad)
-                            {
-                                throw new Exception($"Error en el inventario para la talla ID: {detalle.TallaInventarioId}");
-                            }
-
-                            var detalleVenta = new DetalleVenta
-                            {
-                                VentaId = venta.Id,
-                                TallaInventarioId = detalle.TallaInventarioId,
-                                Cantidad = detalle.Cantidad,
-                                PrecioUnitario = detalle.PrecioUnitario
-                            };
-
-                            tallaInventario.Cantidad -= detalle.Cantidad;
-                            _context.Add(detalleVenta);
-                            _context.Update(tallaInventario);
-                        }
-
-                        foreach (var metodoPago in metodosPago)
-                        {
-                            var pago = new Pago
-                            {
-                                VentaId = venta.Id,
-                                MetodoPagoId = metodoPago.MetodoPagoId,
-                                Monto = metodoPago.Monto
-                            };
-                            _context.Add(pago);
+                            await CrearNuevaVenta(venta, usuarioActual.Id);
                         }
 
                         await _context.SaveChangesAsync();
                         await transaction.CommitAsync();
 
-                        HttpContext.Session.Remove("VentaViewModel");
-                        TempData["SuccessMessage"] = "Venta registrada exitosamente";
+                        TempData["SuccessMessage"] = isEdit ?
+                            "Venta actualizada exitosamente!" : "Venta creada exitosamente!";
                         return RedirectToAction(nameof(Index));
                     }
                     catch (Exception ex)
                     {
                         await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Error al procesar venta");
-                        TempData["ErrorMessage"] = $"Error al procesar la venta: {ex.Message}";
-                        return CargarViewBagYRetornarVista(model);
+                        throw; // Relanzamos la excepción para manejarla fuera
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al {(isEdit ? "editar" : "crear")} venta");
+                TempData["ErrorMessage"] = $"Error al procesar la venta: {ex.Message}";
+                await CargarProductosDisponibles(usuarioActual.Id);
+                return View("CreateEdit", venta);
+            }
+        }
+
+        private async Task CrearNuevaVenta(Venta venta, string usuarioId)
+        {
+            venta.FechaVenta = DateTime.Now;
+            venta.UsuarioVendedorId = usuarioId;
+            venta.Estado = "Completada";
+            venta.Total = venta.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad) * (1 - venta.Descuento / 100m);
+
+            // Actualizar stock
+            foreach (var detalle in venta.Detalles)
+            {
+                var talla = await _context.TallasInventario.FindAsync(detalle.TallaInventarioId);
+                talla.Cantidad -= detalle.Cantidad;
+                _context.Update(talla);
+            }
+
+            await _context.Ventas.AddAsync(venta);
+        }
+
+        private async Task ActualizarVentaExistente(Venta venta)
+        {
+            var ventaExistente = await _context.Ventas
+                .Include(v => v.Detalles)
+                .Include(v => v.Pagos)
+                .FirstOrDefaultAsync(v => v.Id == venta.Id);
+
+            if (ventaExistente == null) throw new Exception("Venta no encontrada");
+
+            // Actualizar propiedades básicas
+            ventaExistente.NombreCliente = venta.NombreCliente;
+            ventaExistente.Descuento = venta.Descuento;
+            ventaExistente.Total = venta.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad) * (1 - venta.Descuento / 100m);
+
+            // Actualizar detalles (productos)
+            await ActualizarDetallesVenta(ventaExistente, venta.Detalles);
+
+            // Actualizar pagos
+            await ActualizarPagosVenta(ventaExistente, venta.Pagos);
+
+            _context.Update(ventaExistente);
+        }
+
+        private async Task ActualizarDetallesVenta(Venta ventaExistente, List<DetalleVenta> nuevosDetalles)
+        {
+            // Eliminar detalles removidos
+            var detallesAEliminar = ventaExistente.Detalles
+                .Where(d => !nuevosDetalles.Any(nd => nd.Id == d.Id))
+                .ToList();
+
+            foreach (var detalle in detallesAEliminar)
+            {
+                // Devolver stock
+                var talla = await _context.TallasInventario.FindAsync(detalle.TallaInventarioId);
+                talla.Cantidad += detalle.Cantidad;
+                _context.Update(talla);
+
+                _context.DetallesVenta.Remove(detalle);
+            }
+
+            // Actualizar/agregar detalles
+            foreach (var detalle in nuevosDetalles)
+            {
+                var detalleExistente = ventaExistente.Detalles.FirstOrDefault(d => d.Id == detalle.Id);
+                var talla = await _context.TallasInventario.FindAsync(detalle.TallaInventarioId);
+
+                if (detalleExistente != null)
+                {
+                    // Ajustar stock según diferencia
+                    var diferencia = detalle.Cantidad - detalleExistente.Cantidad;
+                    talla.Cantidad -= diferencia;
+                    _context.Update(talla);
+
+                    detalleExistente.Cantidad = detalle.Cantidad;
+                    detalleExistente.TallaInventarioId = detalle.TallaInventarioId;
+                    _context.Update(detalleExistente);
+                }
+                else
+                {
+                    // Nuevo detalle
+                    talla.Cantidad -= detalle.Cantidad;
+                    _context.Update(talla);
+
+                    detalle.VentaId = ventaExistente.Id;
+                    await _context.DetallesVenta.AddAsync(detalle);
+                }
+            }
+        }
+
+        private async Task ActualizarPagosVenta(Venta ventaExistente, List<Pago> nuevosPagos)
+        {
+            // Eliminar pagos removidos
+            var pagosAEliminar = ventaExistente.Pagos
+                .Where(p => !nuevosPagos.Any(np => np.Id == p.Id))
+                .ToList();
+
+            _context.Pagos.RemoveRange(pagosAEliminar);
+
+            // Actualizar/agregar pagos
+            foreach (var pago in nuevosPagos)
+            {
+                if (pago.Id > 0)
+                {
+                    var pagoExistente = ventaExistente.Pagos.FirstOrDefault(p => p.Id == pago.Id);
+                    if (pagoExistente != null)
+                    {
+                        pagoExistente.MetodoPagoId = pago.MetodoPagoId;
+                        pagoExistente.Monto = pago.Monto;
+                        _context.Update(pagoExistente);
                     }
                 }
-            });
+                else
+                {
+                    pago.VentaId = ventaExistente.Id;
+                    await _context.Pagos.AddAsync(pago);
+                }
+            }
         }
+
+        private async Task CargarProductosDisponibles(string usuarioId)
+        {
+            var productosDisponibles = await _context.Inventarios
+                .Include(i => i.Tallas)
+                .Where(i => i.UsuarioId == usuarioId && i.Tallas.Any(t => t.Cantidad > 0))
+                .Select(i => new
+                {
+                    i.Id,
+                    i.Nombre,
+                    i.PrecioVenta,
+                    Tallas = i.Tallas.Where(t => t.Cantidad > 0).ToList()
+                })
+                .ToListAsync();
+
+            ViewBag.ProductosDisponibles = productosDisponibles;
+        }
+
+
 
         // GET: Ventas/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -436,7 +490,7 @@ namespace Tenis3t.Controllers
             var usuarioActual = await _userManager.GetUserAsync(User);
             var venta = await _context.Ventas
                 .Include(v => v.UsuarioVendedor)
-                .Include(v => v.Cliente)
+                .Include(v => v.NombreCliente)
                 .Include(v => v.Detalles)
                     .ThenInclude(d => d.TallaInventario)
                         .ThenInclude(t => t.Inventario)
@@ -452,100 +506,7 @@ namespace Tenis3t.Controllers
             return View(venta);
         }
 
-        // GET: Ventas/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
 
-            var usuarioActual = await _userManager.GetUserAsync(User);
-            var venta = await _context.Ventas
-                .Include(v => v.UsuarioVendedor)
-                .Include(v => v.Cliente)
-                .Include(v => v.Detalles)
-                    .ThenInclude(d => d.TallaInventario)
-                        .ThenInclude(t => t.Inventario)
-                .Include(v => v.Pagos)
-                    .ThenInclude(p => p.MetodoPago)
-                .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
-
-            if (venta == null)
-            {
-                return NotFound();
-            }
-
-            if (venta.Estado != "Completada")
-            {
-                TempData["ErrorMessage"] = "Solo se pueden editar ventas completadas";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(venta);
-        }
-
-        // POST: Ventas/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Venta venta)
-        {
-            if (id != venta.Id)
-            {
-                return NotFound();
-            }
-
-            var usuarioActual = await _userManager.GetUserAsync(User);
-
-            try
-            {
-                var ventaExistente = await _context.Ventas
-                    .Include(v => v.Cliente)
-                    .FirstOrDefaultAsync(v => v.Id == id && v.UsuarioVendedorId == usuarioActual.Id);
-
-                if (ventaExistente == null)
-                {
-                    return NotFound();
-                }
-
-                if (ventaExistente.Cliente == null && venta.Cliente != null)
-                {
-                    ventaExistente.Cliente = new Cliente
-                    {
-                        Nombre = venta.Cliente.Nombre,
-                        Cedula = venta.Cliente.Cedula,
-                        Telefono = venta.Cliente.Telefono,
-                        Email = venta.Cliente.Email
-                    };
-                }
-                else if (ventaExistente.Cliente != null && venta.Cliente != null)
-                {
-                    ventaExistente.Cliente.Nombre = venta.Cliente.Nombre;
-                    ventaExistente.Cliente.Cedula = venta.Cliente.Cedula;
-                    ventaExistente.Cliente.Telefono = venta.Cliente.Telefono;
-                    ventaExistente.Cliente.Email = venta.Cliente.Email;
-                }
-
-                _context.Update(ventaExistente);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Venta actualizada exitosamente";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                if (!VentaExists(venta.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    _logger.LogError(ex, "Error al actualizar venta");
-                    TempData["ErrorMessage"] = "Error al actualizar la venta";
-                    throw;
-                }
-            }
-        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
