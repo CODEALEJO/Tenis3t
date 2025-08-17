@@ -298,6 +298,20 @@ namespace Tenis3t.Controllers
                 return CargarViewBagYRetornarVista(model);
             }
 
+            // Verificar que todos los métodos de pago existan en la base de datos
+            var metodosPagoIds = metodosPagoValidos.Select(m => m.MetodoPagoId).Distinct();
+            var metodosExistentes = await _context.MetodoPagos
+                .Where(m => metodosPagoIds.Contains(m.Id))
+                .Select(m => m.Id)
+                .ToListAsync();
+
+            var metodosNoExistentes = metodosPagoIds.Except(metodosExistentes).ToList();
+            if (metodosNoExistentes.Any())
+            {
+                ModelState.AddModelError("", $"Los siguientes métodos de pago no existen: {string.Join(", ", metodosNoExistentes)}");
+                return CargarViewBagYRetornarVista(model);
+            }
+
             decimal totalPagado = metodosPagoValidos.Sum(mp => mp.Monto);
             if (Math.Abs(totalPagado - totalVenta) > 0.01m)
             {
@@ -310,31 +324,6 @@ namespace Tenis3t.Controllers
             return await ProcesarVenta(ventaViewModel, metodosPagoValidos, usuarioActual.Id);
         }
 
-        private IActionResult CargarViewBagYRetornarVista(VentaViewModel model)
-        {
-            // Cargar métodos de pago disponibles para el dropdown
-            var metodosPagoDisponibles = _context.MetodoPagos
-                .OrderBy(m => m.Nombre)
-                .Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Nombre
-                })
-                .ToList();
-
-            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
-
-            // Si no hay métodos de pago en el modelo, agregar uno vacío
-            if (model.MetodosPago == null || !model.MetodosPago.Any())
-            {
-                model.MetodosPago = new List<MetodoPagoViewModel>
-        {
-            new MetodoPagoViewModel()
-        };
-            }
-
-            return View("MetodosPago", model);
-        }
         private async Task<IActionResult> ProcesarVenta(VentaViewModel model, List<MetodoPagoViewModel> metodosPago, string usuarioId)
         {
             decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
@@ -398,11 +387,20 @@ namespace Tenis3t.Controllers
 
                         foreach (var metodoPago in metodosPago)
                         {
+                            // Verificar nuevamente que el método de pago existe
+                            var metodoExiste = await _context.MetodoPagos
+                                .AnyAsync(m => m.Id == metodoPago.MetodoPagoId);
+                            
+                            if (!metodoExiste)
+                            {
+                                throw new Exception($"El método de pago con ID {metodoPago.MetodoPagoId} no existe");
+                            }
+
                             var pago = new Pago
                             {
                                 VentaId = venta.Id,
                                 MetodoPagoId = metodoPago.MetodoPagoId,
-                                Monto = metodoPago.Monto
+                                Monto = metodoPago.Monto,
                             };
                             _context.Add(pago);
                         }
@@ -424,6 +422,121 @@ namespace Tenis3t.Controllers
                 }
             });
         }
+
+        private IActionResult CargarViewBagYRetornarVista(VentaViewModel model)
+        {
+            // Cargar métodos de pago disponibles para el dropdown
+            var metodosPagoDisponibles = _context.MetodoPagos
+                .OrderBy(m => m.Nombre)
+                .Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Nombre
+                })
+                .ToList();
+
+            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
+
+            // Si no hay métodos de pago en el modelo, agregar uno vacío
+            if (model.MetodosPago == null || !model.MetodosPago.Any())
+            {
+                model.MetodosPago = new List<MetodoPagoViewModel>
+        {
+            new MetodoPagoViewModel()
+        };
+            }
+
+            return View("MetodosPago", model);
+        }
+        // private async Task<IActionResult> ProcesarVenta(VentaViewModel model, List<MetodoPagoViewModel> metodosPago, string usuarioId)
+        // {
+        //     decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
+
+        //     var executionStrategy = _context.Database.CreateExecutionStrategy();
+
+        //     return await executionStrategy.ExecuteAsync(async () =>
+        //     {
+        //         using (var transaction = await _context.Database.BeginTransactionAsync())
+        //         {
+        //             try
+        //             {
+        //                 Cliente? cliente = null;
+        //                 if (!string.IsNullOrEmpty(model.NombreCliente))
+        //                 {
+        //                     cliente = new Cliente
+        //                     {
+        //                         Nombre = model.NombreCliente,
+        //                         Cedula = model.CedulaCliente,
+        //                         Telefono = model.TelefonoCliente,
+        //                         Email = model.EmailCliente,
+        //                     };
+        //                     _context.Add(cliente);
+        //                     await _context.SaveChangesAsync();
+        //                 }
+
+        //                 var venta = new Venta
+        //                 {
+        //                     FechaVenta = DateTime.Now,
+        //                     Estado = "Completada",
+        //                     UsuarioVendedorId = usuarioId,
+        //                     ClienteId = cliente?.Id,
+        //                     Total = totalVenta
+        //                 };
+        //                 _context.Add(venta);
+        //                 await _context.SaveChangesAsync();
+
+        //                 foreach (var detalle in model.Detalles)
+        //                 {
+        //                     var tallaInventario = await _context.TallasInventario
+        //                         .Include(t => t.Inventario)
+        //                         .FirstOrDefaultAsync(t => t.Id == detalle.TallaInventarioId);
+
+        //                     if (tallaInventario == null || tallaInventario.Cantidad < detalle.Cantidad)
+        //                     {
+        //                         throw new Exception($"Error en el inventario para la talla ID: {detalle.TallaInventarioId}");
+        //                     }
+
+        //                     var detalleVenta = new DetalleVenta
+        //                     {
+        //                         VentaId = venta.Id,
+        //                         TallaInventarioId = detalle.TallaInventarioId,
+        //                         Cantidad = detalle.Cantidad,
+        //                         PrecioUnitario = detalle.PrecioUnitario
+        //                     };
+
+        //                     tallaInventario.Cantidad -= detalle.Cantidad;
+        //                     _context.Add(detalleVenta);
+        //                     _context.Update(tallaInventario);
+        //                 }
+
+        //                 foreach (var metodoPago in metodosPago)
+        //                 {
+        //                     var pago = new Pago
+        //                     {
+        //                         VentaId = venta.Id,
+        //                         MetodoPagoId = metodoPago.MetodoPagoId,
+        //                         Monto = metodoPago.Monto
+        //                     };
+        //                     _context.Add(pago);
+        //                 }
+
+        //                 await _context.SaveChangesAsync();
+        //                 await transaction.CommitAsync();
+
+        //                 HttpContext.Session.Remove("VentaViewModel");
+        //                 TempData["SuccessMessage"] = "Venta registrada exitosamente";
+        //                 return RedirectToAction(nameof(Index));
+        //             }
+        //             catch (Exception ex)
+        //             {
+        //                 await transaction.RollbackAsync();
+        //                 _logger.LogError(ex, "Error al procesar venta");
+        //                 TempData["ErrorMessage"] = $"Error al procesar la venta: {ex.Message}";
+        //                 return CargarViewBagYRetornarVista(model);
+        //             }
+        //         }
+        //     });
+        // }
 
         // GET: Ventas/Details/5
         public async Task<IActionResult> Details(int? id)

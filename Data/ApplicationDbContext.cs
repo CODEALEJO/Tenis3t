@@ -81,9 +81,18 @@ namespace Tenis3t.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Seed de métodos de pago
+            modelBuilder.Entity<MetodoPago>().HasData(
+                new MetodoPago { Id = 1, Nombre = "Efectivo" },
+                new MetodoPago { Id = 2, Nombre = "Crédito" },
+                new MetodoPago { Id = 3, Nombre = "Transferencia" }
+            );
+            
             // Cambiar nombre de tabla para TallaInventario
             modelBuilder.Entity<TallaInventario>().ToTable("TallasInventario");
             modelBuilder.Entity<DetalleVenta>().ToTable("DetallesVenta");
+
+
         }
     }
 }
