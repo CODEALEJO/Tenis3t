@@ -1,6 +1,9 @@
 @model IEnumerable<Tenis3t.Models.Prestamo>
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
 @{
     ViewData["Title"] = "Préstamos";
+    var currentUser = await UserManager.GetUserAsync(User);
 }
 
 <div class="container">
@@ -13,6 +16,10 @@
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning">@TempData["WarningMessage"]</div>
     }
 
     <div class="mb-4">
@@ -59,7 +66,8 @@
                             <td>@item.Cantidad</td>
                             <td>@item.FechaPrestamo.ToString("dd/MM/yyyy")</td>
                             <td>
-                                <span class="badge @(item.Estado == "Prestado" ? "bg-warning" : "bg-success")">
+                                <span
+                                    class="badge @(item.Estado == "Prestado" ? "bg-warning" : item.Estado == "Devuelto" ? "bg-success" : "bg-secondary")">
                                     @item.Estado
                                 </span>
                             </td>
@@ -67,8 +75,21 @@
                                 <div class="btn-group btn-group-sm" role="group">
                                     @if (item.Estado == "Prestado")
                                     {
-                                        <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-danger">Devolver</a>
-                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Editar</a>
+                                        @if (item.UsuarioReceptorId == currentUser.Id)
+                                        {
+                                            <form asp-action="Devolver" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-danger btn-sm">Devolver</button>
+                                            </form>
+                                        }
+                                        @if (item.UsuarioPrestamistaId == currentUser.Id)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">Editar</a>
+                                            <form asp-action="MarcarComoVendido" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-secondary btn-sm">Marcar como Vendido</button>
+                                            </form>
+                                        }
                                     }
                                     else
                                     {
@@ -83,7 +104,6 @@
         </div>
     </div>
 
-    <!-- Versión para móviles -->
     <div class="d-md-none">
         <div class="list-group">
             @foreach (var item in Model)
@@ -110,12 +130,31 @@
                             <span>Cantidad: @item.Cantidad</span>
                             <span>Fecha: @item.FechaPrestamo.ToString("dd/MM/yyyy")</span>
                         </div>
+                        @if (item.FechaDevolucion.HasValue)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <span>Devuelto: @item.FechaDevolucion.Value.ToString("dd/MM/yyyy")</span>
+                            </div>
+                        }
                     </div>
                     <div class="mt-2 btn-group w-100" role="group">
                         @if (item.Estado == "Prestado")
                         {
-                            <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Devolver</a>
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Editar</a>
+                            @if (item.UsuarioReceptorId == currentUser.Id)
+                            {
+                                <form asp-action="Devolver" method="post" class="d-inline w-50">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
+                                </form>
+                            }
+                            @if (item.UsuarioPrestamistaId == currentUser.Id)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">Editar</a>
+                                <form asp-action="MarcarComoVendido" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-secondary btn-sm">Vendido</button>
+                                </form>
+                            }
                         }
                         else
                         {
@@ -126,4 +165,48 @@
             }
         </div>
     </div>
+</div>
+<!-- Versión para móviles -->
+<div class="d-md-none">
+    <div class="list-group">
+        @foreach (var item in Model)
+        {
+            <div class="list-group-item mb-3">
+                <div class="d-flex justify-content-between">
+                    <h6 class="mb-1">@item.TallaInventario.Inventario.Nombre (@item.TallaInventario.Talla)</h6>
+                    <span class="badge @(item.Estado == "Prestado" ? "bg-warning" : "bg-success")">
+                        @item.Estado
+                    </span>
+                </div>
+                <small class="text-muted">
+                    @if (ViewBag.FiltroSeleccionado == "recibidos")
+                    {
+                        <span>De: @item.UsuarioPrestamista.UserName</span>
+                    }
+                    else
+                    {
+                        <span>Para: @item.UsuarioReceptor.UserName</span>
+                    }
+                </small>
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Cantidad: @item.Cantidad</span>
+                        <span>Fecha: @item.FechaPrestamo.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+                <div class="mt-2 btn-group w-100" role="group">
+                    @if (item.Estado == "Prestado")
+                    {
+                        <a asp-action="Devolver" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Devolver</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Editar</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">No hay acciones disponibles</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
 </div>

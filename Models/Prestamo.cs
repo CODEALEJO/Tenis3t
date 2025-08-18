@@ -10,6 +10,7 @@ namespace Tenis3t.Models
     {
         public int Id { get; set; }
         public DateTime FechaPrestamo { get; set; } = DateTime.Now;
+        public DateTime? FechaDevolucion { get; set; }  // Nullable porque solo se setea al devolver
         public string Estado { get; set; } = "Prestado";
 
         [Required]
@@ -28,7 +29,7 @@ namespace Tenis3t.Models
         [ForeignKey("UsuarioPrestamistaId")]
         public virtual IdentityUser UsuarioPrestamista { get; set; }
 
-        
+
         public string UsuarioReceptorId { get; set; }
 
         [ForeignKey("UsuarioReceptorId")]
