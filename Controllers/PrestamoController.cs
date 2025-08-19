@@ -340,40 +340,39 @@ namespace Tenis3t.Controllers
         public async Task<IActionResult> MarcarComoVendido(int id)
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            var executionStrategy = _context.Database.CreateExecutionStrategy();
 
-            try
+            return await executionStrategy.ExecuteAsync(async () =>
             {
-                var prestamo = await _context.Prestamos
-                    .Include(p => p.TallaInventario)
-                        .ThenInclude(ti => ti.Inventario)
-                    .FirstOrDefaultAsync(p => p.Id == id);
-
-                if (prestamo == null)
-                {
-                    TempData["ErrorMessage"] = "Préstamo no encontrado";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Verificar permisos
-                if (prestamo.UsuarioPrestamistaId != currentUser.Id && prestamo.UsuarioReceptorId != currentUser.Id)
-                {
-                    TempData["ErrorMessage"] = "No tienes permiso para esta acción";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                // Verificar que el préstamo no esté ya devuelto o vendido
-                if (prestamo.Estado != "Prestado")
-                {
-                    TempData["WarningMessage"] = $"Este préstamo ya ha sido {prestamo.Estado.ToLower()}";
-                    return RedirectToAction(nameof(Index));
-                }
-
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
                 try
                 {
-                    // Marcar como vendido (no devolvemos al inventario)
+                    var prestamo = await _context.Prestamos
+                        .Include(p => p.TallaInventario)
+                            .ThenInclude(ti => ti.Inventario)
+                        .FirstOrDefaultAsync(p => p.Id == id);
+
+                    if (prestamo == null)
+                    {
+                        TempData["ErrorMessage"] = "Préstamo no encontrado";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    if (prestamo.UsuarioPrestamistaId != currentUser.Id)
+                    {
+                        TempData["ErrorMessage"] = "No tienes permiso para esta acción";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    if (prestamo.Estado != "Prestado")
+                    {
+                        TempData["WarningMessage"] = $"Este préstamo ya ha sido {prestamo.Estado.ToLower()}";
+                        return RedirectToAction(nameof(Index));
+                    }
+
                     prestamo.Estado = "Vendido";
+                    prestamo.FechaDevolucion = DateTime.Now;
                     _context.Update(prestamo);
 
                     await _context.SaveChangesAsync();
@@ -382,18 +381,14 @@ namespace Tenis3t.Controllers
                     TempData["SuccessMessage"] = "Préstamo marcado como vendido exitosamente";
                     return RedirectToAction(nameof(Index));
                 }
-                catch
+                catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    throw;
+                    _logger.LogError(ex, "Error al marcar préstamo como vendido");
+                    TempData["ErrorMessage"] = "Error al marcar el préstamo como vendido";
+                    return RedirectToAction(nameof(Index));
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al marcar préstamo como vendido");
-                TempData["ErrorMessage"] = "Error al marcar el préstamo como vendido";
-                return RedirectToAction(nameof(Index));
-            }
+            });
         }
 
 
