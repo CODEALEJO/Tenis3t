@@ -1,0 +1,93 @@
+@model Tenis3t.Models.ConteoGeneralViewModel
+@{
+    ViewData["Title"] = "Conteo General";
+}
+
+<div class="container">
+    <h1 class="my-4">Conteo General</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Exhibiciones Activas</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Usuario Receptor</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Fecha Exhibición</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Exhibiciones)
+                            {
+                                <tr>
+                                    <td>@item.UsuarioReceptor.UserName</td>
+                                    <td>@item.TallaInventario.Inventario.Nombre (@item.TallaInventario.Talla)</td>
+                                    <td>@item.Cantidad</td>
+                                    <td>@item.FechaPrestamo.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <strong>Total en exhibición: @Model.TotalExhibiciones</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Inventario Disponible</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Género</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Inventario)
+                            {
+                                <tr>
+                                    <td>@item.Nombre</td>
+                                    <td>@item.Genero</td>
+                                    <td>@item.Tallas.Sum(t => t.Cantidad)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <strong>Inventario disponible: @Model.TotalInventario</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body text-center bg-light">
+            <h4 class="mb-0">
+                Total entre exhibiciones e inventario: 
+                <span class="badge bg-primary">
+                    @(Model.TotalExhibiciones + Model.TotalInventario)
+                </span>
+            </h4>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a asp-action="Index" class="btn btn-danger">
+            <i class="bi bi-arrow-left"></i> Volver a Exhibiciones
+        </a>
+    </div>
+</div>
