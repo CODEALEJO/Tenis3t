@@ -34,35 +34,38 @@
                 </div>
             </nav>
 
-            <!-- Barra de navegación principal -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded py-3">
-                <div class="container-fluid justify-content-center">
-                    <div class="navbar-nav flex-row">
-                        <a class="nav-link btn btn-primary mx-2 text-white" asp-controller="Ventas" asp-action="Index">
-                            <i class="bi bi-cash"></i> Ventas
-                        </a>
-                        <a class="nav-link btn btn-warning mx-2 text-white" asp-controller="Inventario" asp-action="Index">
-                            <i class="bi bi-box-seam"></i> Inventario
-                        </a>
-                        <a class="nav-link btn btn-success mx-2 text-white" asp-controller="Prestamo" asp-action="Index">
-                            <i class="bi bi-arrow-left-right"></i> Préstamos
-                        </a>
-                        
-                        @if (User.Identity.Name == "3T")
-                        {
-                            <a class="nav-link btn btn-info mx-2 text-white" asp-controller="Exhibiciones" asp-action="Index">
-                                <i class="bi bi-display"></i> Exhibiciones
-                            </a>
-                        }
-                        
-                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                            <button type="submit" class="nav-link btn btn-danger mx-2 text-white">
-                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </nav>
+           <!-- Barra de navegación principal -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded py-3">
+    <div class="container-fluid justify-content-center">
+        <div class="navbar-nav flex-row">
+            <a class="nav-link btn btn-primary mx-2 text-white" asp-controller="Ventas" asp-action="Index">
+                <i class="bi bi-cash"></i> Ventas
+            </a>
+            <a class="nav-link btn btn-warning mx-2 text-white" asp-controller="Inventario" asp-action="Index">
+                <i class="bi bi-box-seam"></i> Inventario
+            </a>
+            <a class="nav-link btn btn-success mx-2 text-white" asp-controller="Prestamo" asp-action="Index">
+                <i class="bi bi-arrow-left-right"></i> Préstamos
+            </a>
+            
+            @if (User.Identity.Name == "3T")
+            {
+                <a class="nav-link btn btn-info mx-2 text-white" asp-controller="Exhibiciones" asp-action="Index">
+                    <i class="bi bi-display"></i> Exhibiciones
+                </a>
+                <a class="nav-link btn btn-secondary mx-2 text-white" asp-controller="Busqueda" asp-action="Unificada">
+                    <i class="bi bi-search-heart"></i> Búsqueda Unificada
+                </a>
+            }
+            
+            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                <button type="submit" class="nav-link btn btn-danger mx-2 text-white">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
         </header>
     }
 

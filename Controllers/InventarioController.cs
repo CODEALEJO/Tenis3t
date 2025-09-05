@@ -228,6 +228,7 @@ namespace Tenis3t.Controllers
 
         public async Task<IActionResult> Edit(int id)
         {
+            ModelState.Clear();
             var usuarioActualId = _userManager.GetUserId(User);
             var inventario = await _context.Inventarios
                 .Include(i => i.Tallas)
@@ -240,8 +241,9 @@ namespace Tenis3t.Controllers
 
             // Preparar las tallas para la vista
             var tallasDisponibles = inventario.Genero == "hombre" ?
-                new[] { "40", "41", "42", "43", "44", "45" } :
-                new[] { "35", "36", "37", "38", "39", "40" };
+         new[] { "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
+         new[] { "34", "35", "36", "37", "38", "39", "40" };
+
 
             ViewBag.TallasDisponibles = tallasDisponibles;
             ViewBag.Generos = new List<SelectListItem>
@@ -254,125 +256,148 @@ namespace Tenis3t.Controllers
         }
 
         [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
-{
-    if (claveSeguridad != DeletePassword)
-    {
-        TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-        return RedirectToAction(nameof(Index));
-    }
-
-    var usuarioActualId = _userManager.GetUserId(User);
-
-    if (id != inventario.Id)
-    {
-        return NotFound();
-    }
-
-    // Obtener el inventario existente
-    var inventarioExistente = await _context.Inventarios
-        .Include(i => i.Tallas)
-        .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == usuarioActualId);
-
-    if (inventarioExistente == null)
-    {
-        return NotFound();
-    }
-
-    ModelState.Remove("Usuario");
-    ModelState.Remove("UsuarioId");
-    ModelState.Remove("Tallas");
-
-    if (ModelState.IsValid)
-    {
-        try
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
         {
-            // Actualizar propiedades básicas
-            inventarioExistente.Nombre = inventario.Nombre;
-            inventarioExistente.Genero = inventario.Genero;
-            inventarioExistente.Costo = inventario.Costo;
-            inventarioExistente.PrecioVenta = inventario.PrecioVenta;
-
-            // Procesar tallas
-            if (tallas != null)
+            if (claveSeguridad != DeletePassword)
             {
-                // Eliminar tallas que no están en el nuevo conjunto
-                var tallasAEliminar = inventarioExistente.Tallas
-                    .Where(t => !tallas.ContainsKey(t.Talla))
-                    .ToList();
-
-                foreach (var talla in tallasAEliminar)
-                {
-                    _context.TallasInventario.Remove(talla);
-                }
-
-                // Actualizar o agregar tallas
-                foreach (var talla in tallas)
-                {
-                    if (talla.Value > 0) // Solo procesar si la cantidad es positiva
-                    {
-                        var tallaExistente = inventarioExistente.Tallas
-                            .FirstOrDefault(t => t.Talla == talla.Key);
-
-                        if (tallaExistente != null)
-                        {
-                            tallaExistente.Cantidad = talla.Value;
-                        }
-                        else
-                        {
-                            _context.TallasInventario.Add(new TallaInventario
-                            {
-                                InventarioId = inventarioExistente.Id,
-                                Talla = talla.Key,
-                                Cantidad = talla.Value
-                            });
-                        }
-                    }
-                }
+                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
+                // Recargar los datos para mostrar el formulario con errores
+                return await RecargarDatosParaVista(id, inventario);
             }
 
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Producto actualizado correctamente";
-            return RedirectToAction(nameof(Index));
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            if (!ProductoExists(inventario.Id))
+            var usuarioActualId = _userManager.GetUserId(User);
+
+            if (id != inventario.Id)
             {
                 return NotFound();
             }
-            else
+
+            // Obtener el inventario existente
+            var inventarioExistente = await _context.Inventarios
+                .Include(i => i.Tallas)
+                .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == usuarioActualId);
+
+            if (inventarioExistente == null)
             {
-                ModelState.AddModelError("", "Error de concurrencia: " + ex.Message);
+                return NotFound();
             }
+
+            ModelState.Remove("Usuario");
+            ModelState.Remove("UsuarioId");
+            ModelState.Remove("Tallas");
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    // Si cambió el género, eliminar todas las tallas existentes
+                    if (inventarioExistente.Genero != inventario.Genero)
+                    {
+                        var tallasAEliminar = inventarioExistente.Tallas.ToList();
+                        foreach (var talla in tallasAEliminar)
+                        {
+                            _context.TallasInventario.Remove(talla);
+                        }
+                    }
+
+                    // Actualizar propiedades básicas
+                    inventarioExistente.Nombre = inventario.Nombre;
+                    inventarioExistente.Genero = inventario.Genero;
+                    inventarioExistente.Costo = inventario.Costo;
+                    inventarioExistente.PrecioVenta = inventario.PrecioVenta;
+
+                    // Procesar tallas
+                    if (tallas != null)
+                    {
+                        // Si no cambió el género, eliminar solo las tallas que no están en el nuevo conjunto
+                        if (inventarioExistente.Genero == inventario.Genero)
+                        {
+                            var tallasAEliminar = inventarioExistente.Tallas
+                                .Where(t => !tallas.ContainsKey(t.Talla))
+                                .ToList();
+
+                            foreach (var talla in tallasAEliminar)
+                            {
+                                _context.TallasInventario.Remove(talla);
+                            }
+                        }
+
+                        // Actualizar o agregar tallas
+                        foreach (var talla in tallas)
+                        {
+                            if (talla.Value > 0) // Solo procesar si la cantidad es positiva
+                            {
+                                var tallaExistente = inventarioExistente.Tallas
+                                    .FirstOrDefault(t => t.Talla == talla.Key);
+
+                                if (tallaExistente != null)
+                                {
+                                    tallaExistente.Cantidad = talla.Value;
+                                }
+                                else
+                                {
+                                    _context.TallasInventario.Add(new TallaInventario
+                                    {
+                                        InventarioId = inventarioExistente.Id,
+                                        Talla = talla.Key,
+                                        Cantidad = talla.Value
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Producto actualizado correctamente";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    if (!ProductoExists(inventario.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Error de concurrencia: " + ex.Message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
+                }
+            }
+            return await RecargarDatosParaVista(id, inventario);
         }
-        catch (Exception ex)
+
+        // Método auxiliar para recargar datos
+        private async Task<IActionResult> RecargarDatosParaVista(int id, Inventario inventario)
         {
-            ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
-        }
-    }
+            var usuarioActualId = _userManager.GetUserId(User);
+            var productoCompleto = await _context.Inventarios
+                .Include(i => i.Tallas)
+                .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == usuarioActualId);
 
-    // Si hay errores, recargar los datos necesarios para la vista
-    var tallasDisponibles = inventario.Genero == "hombre" ? 
-        new[] { "40", "41", "42", "43", "44", "45" } : 
-        new[] { "35", "36", "37", "38", "39", "40" };
+            if (productoCompleto != null)
+            {
+                // Mantener los valores que el usuario ingresó, pero asegurar que las tallas estén cargadas
+                inventario.Tallas = productoCompleto.Tallas;
+            }
 
-    ViewBag.TallasDisponibles = tallasDisponibles;
-    ViewBag.Generos = new List<SelectListItem>
+            var tallasDisponibles = inventario.Genero == "hombre" ?
+                new[] { "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
+                new[] { "34", "35", "36", "37", "38", "39", "40" };
+
+            ViewBag.TallasDisponibles = tallasDisponibles;
+            ViewBag.Generos = new List<SelectListItem>
     {
         new SelectListItem { Value = "hombre", Text = "Hombre", Selected = inventario.Genero == "hombre" },
         new SelectListItem { Value = "dama", Text = "Dama", Selected = inventario.Genero == "dama" }
     };
 
-    // Recargar las tallas actuales
-    inventario.Tallas = await _context.TallasInventario
-        .Where(t => t.InventarioId == id)
-        .ToListAsync();
-
-    return View(inventario);
-}
-
+            return View(inventario);
+        }
         public async Task<IActionResult> Delete(int id)
         {
             var usuarioActualId = _userManager.GetUserId(User);

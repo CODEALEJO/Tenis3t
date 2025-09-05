@@ -102,11 +102,11 @@
             });
 
             // Tallas por género
+            // Tallas por género
             const tallasPorGenero = {
-                'hombre': ['40', '41', '42', '43', '44', '45'],
-                'dama': ['35', '36', '37', '38', '39', '40']
+                'hombre': ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50'],
+                'dama': ['34', '35', '36', '37', '38', '39', '40']
             };
-
             // Manejador de cambio en el select de género
             document.getElementById('generoSelect').addEventListener('change', function () {
                 const genero = this.value;
@@ -122,14 +122,14 @@
                         const div = document.createElement('div');
                         div.className = 'row mb-2';
                         div.innerHTML = `
-                                <div class="col-md-2">
-                                    <label class="form-label">Talla ${talla}</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
-                                           min="0" value="0" data-talla="${talla}" />
-                                </div>
-                            `;
+                                        <div class="col-md-2">
+                                            <label class="form-label">Talla ${talla}</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
+                                                   min="0" value="0" data-talla="${talla}" />
+                                        </div>
+                                    `;
                         tallasContainer.appendChild(div);
                     });
 

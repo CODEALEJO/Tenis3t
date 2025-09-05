@@ -1,0 +1,113 @@
+@model Tenis3t.Models.BusquedaUnificadaViewModel
+
+@{
+    ViewData["Title"] = "Búsqueda Unificada";
+}
+
+<div class="container mt-4">
+    <!-- Formulario de búsqueda -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Unificada" class="row g-3">
+                <div class="col-md-8">
+                    <label for="nombre" class="form-label">Buscar producto:</label>
+                    <input type="text" name="nombre" id="nombre" class="form-control" 
+                           placeholder="Nombre del producto" value="@Model.NombreProducto" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary form-control">Buscar</button>
+                </div>
+            </form>
+            
+            @if (User.Identity?.Name != "3T")
+            {
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Solo el usuario 3T puede realizar búsquedas unificadas
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    @if (!string.IsNullOrEmpty(Model.NombreProducto))
+    {
+        <h4>Resultados para: "@Model.NombreProducto"</h4>
+        
+        <!-- Inventario -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">En Inventario</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.EnInventario.Any())
+                {
+                    @foreach (var inventario in Model.EnInventario)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6>Usuario: @inventario.Usuario</h6>
+                                <p><strong>Cantidad total:</strong> @inventario.CantidadTotal</p>
+                                <p><strong>Precio de venta:</strong> @inventario.PrecioVenta.ToString("N0")</p>
+                                
+                                <h6>Tallas disponibles:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var talla in inventario.Tallas)
+                                    {
+                                        <span class="badge bg-info">Talla @talla.Talla: @talla.Cantidad</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No se encontró en inventario
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Exhibición -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">En Exhibición</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.EnExhibicion.Any())
+                {
+                    @foreach (var exhibicion in Model.EnExhibicion)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6>Cliente: @exhibicion.Cliente</h6>
+                                <p><strong>Cantidad:</strong> @exhibicion.Cantidad</p>
+                                <p><strong>Talla:</strong> @exhibicion.Talla</p>
+                                <p><strong>Fecha de préstamo:</strong> @exhibicion.FechaPrestamo.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No se encontró en exhibición
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <a href="@Url.Action("Index", "Inventario")" class="btn btn-secondary">Volver al Inventario</a>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Ingresa el nombre de un producto para buscar en inventario y exhibiciones
+        </div>
+    }
+</div>
