@@ -84,5 +84,33 @@ namespace Tenis3t.Controllers
 
             return View(viewModel);
         }
+
+        public async Task<IActionResult> ImprimirExhibiciones(string usuarioReceptor)
+        {
+            if (User.Identity?.Name != "3T")
+            {
+                return Forbid();
+            }
+
+            if (string.IsNullOrEmpty(usuarioReceptor))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Consulta para obtener las exhibiciones del usuario receptor específico
+            var exhibiciones = await _context.Prestamos
+                .Include(p => p.TallaInventario)
+                    .ThenInclude(ti => ti.Inventario)
+                .Include(p => p.UsuarioReceptor)
+                .Where(p => p.UsuarioPrestamista.UserName == "3T" &&
+                           p.UsuarioReceptor.UserName == usuarioReceptor)
+                .OrderByDescending(p => p.FechaPrestamo)
+                .ToListAsync();
+
+            ViewBag.UsuarioReceptor = usuarioReceptor;
+            ViewBag.FechaImpresion = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+            return View(exhibiciones);
+        }
     }
 }

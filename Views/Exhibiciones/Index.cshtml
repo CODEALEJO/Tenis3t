@@ -33,6 +33,42 @@
             <a asp-action="ConteoGeneral" class="btn btn-success">
                 <i class="bi bi-plus-circle"></i> Conteo General
             </a>
+            <!-- Botón para abrir el modal de impresión -->
+            <button type="button" class="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#modalImpresion">
+                <i class="bi bi-printer"></i> Imprimir Exhibiciones
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para seleccionar usuario para impresión -->
+    <div class="modal fade" id="modalImpresion" tabindex="-1" aria-labelledby="modalImpresionLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalImpresionLabel">Imprimir Exhibiciones por Local</h5>
+                    <button type="button" class="btn-close" data-bs-close="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form asp-action="ImprimirExhibiciones" method="get" target="_blank">
+                        <div class="mb-3">
+                            <label for="usuarioReceptor" class="form-label">Seleccionar Local/Usuario:</label>
+                            <select class="form-select" id="usuarioReceptor" name="usuarioReceptor" required>
+                                <option value="">-- Seleccione un local --</option>
+                                @foreach (var usuario in Model.Select(p => p.UsuarioReceptor.UserName).Distinct().OrderBy(u => u))
+                                {
+                                    <option value="@usuario">@usuario</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-printer"></i> Imprimir
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -97,7 +133,6 @@
                                 <span>Fecha: @item.FechaPrestamo.ToString("dd/MM/yyyy")</span>
                             </div>
                         </div>
-
                     </div>
                 }
             </div>
@@ -108,10 +143,10 @@
     <script>
         $(document).ready(function () {
             // Opcional: Búsqueda dinámica sin recargar la página
-            $('#clienteSearch').on('input', function () {
+            $('input[name="cliente"]').on('input', function () {
                 const searchValue = $(this).val().toLowerCase();
                 $('table tbody tr, .list-group-item').each(function () {
-                    const clienteText = $(this).find('td:nth-child(2), small').text().toLowerCase();
+                    const clienteText = $(this).find('td:first-child, small').text().toLowerCase();
                     $(this).toggle(clienteText.includes(searchValue));
                 });
             });

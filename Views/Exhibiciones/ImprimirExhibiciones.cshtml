@@ -1,0 +1,147 @@
+@model IEnumerable<Prestamo>
+
+@{
+    ViewData["Title"] = "Reporte de Exhibiciones";
+    Layout = null; // No usar layout para impresión
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <title>@ViewData["Title"]</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .header h2 {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #555;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+        @@media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+        .btn {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>3T - Reporte de Exhibiciones</h1>
+        <h2>Local: @ViewBag.UsuarioReceptor</h2>
+        <p>Fecha de impresión: @ViewBag.FechaImpresion</p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p>No se encontraron exhibiciones para este local.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Talla</th>
+                    <th>Cantidad</th>
+                    <th>Fecha Exhibición</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.TallaInventario.Inventario.Nombre</td>
+                        <td>@item.TallaInventario.Talla</td>
+                        <td>@item.Cantidad</td>
+                        <td>@item.FechaPrestamo.ToString("dd/MM/yyyy")</td>
+                        <td>@item.Estado</td>
+                    </tr>
+                }
+                <tr class="total-row">
+                    <td colspan="2"><strong>Total</strong></td>
+                    <td><strong>@Model.Sum(p => p.Cantidad)</strong></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <div class="footer">
+        <p>Generado por Sistema 3T - @DateTime.Now.Year</p>
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
+        <button onclick="window.close()" class="btn btn-secondary">Cerrar</button>
+    </div>
+
+    <script>
+        // Auto-imprimir al cargar la página
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>
