@@ -154,7 +154,7 @@ namespace Tenis3t.Controllers
 
             var productosDisponibles = await _context.Inventarios
                 .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
-                .OrderBy(i => i.Nombre) // <- Añade esta línea para ordenar alfabéticamente
+                .OrderBy(i => i.Nombre)
                 .Select(i => new ProductoDisponibleViewModel
                 {
                     Id = i.Id,
@@ -164,10 +164,25 @@ namespace Tenis3t.Controllers
                 })
                 .ToListAsync();
 
-            ViewBag.ProductosDisponibles = productosDisponibles;
-            ViewBag.InventarioDisponible = productosDisponibles; // Para el JavaScript
+            // Cargar métodos de pago disponibles
+            var metodosPagoDisponibles = await _context.MetodoPagos
+                .OrderBy(m => m.Nombre)
+                .Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Nombre
+                })
+                .ToListAsync();
 
-            return View(new VentaViewModel());
+            ViewBag.ProductosDisponibles = productosDisponibles;
+            ViewBag.InventarioDisponible = productosDisponibles;
+            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
+
+            return View(new VentaViewModel
+            {
+                Detalles = new List<DetalleVentaViewModel> { new DetalleVentaViewModel() },
+                MetodosPago = new List<MetodoPagoViewModel> { new MetodoPagoViewModel() }
+            });
         }
 
         // POST: Ventas/Create (Paso 1: Guardar productos y pasar a métodos de pago)
@@ -181,18 +196,38 @@ namespace Tenis3t.Controllers
                 return Unauthorized();
             }
 
-            var inventarioDisponible = await _context.Inventarios
-                .Include(i => i.Tallas)
+            // Cargar datos para la vista en caso de error
+            var productosDisponibles = await _context.Inventarios
                 .Where(i => i.UsuarioId == usuarioActual.Id && i.Tallas.Any(t => t.Cantidad > 0))
+                .OrderBy(i => i.Nombre)
+                .Select(i => new ProductoDisponibleViewModel
+                {
+                    Id = i.Id,
+                    Nombre = i.Nombre,
+                    PrecioVenta = i.PrecioVenta,
+                    Tallas = i.Tallas.Where(t => t.Cantidad > 0).ToList()
+                })
                 .ToListAsync();
 
-            ViewBag.InventarioDisponible = inventarioDisponible;
+            var metodosPagoDisponibles = await _context.MetodoPagos
+                .OrderBy(m => m.Nombre)
+                .Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Nombre
+                })
+                .ToListAsync();
+
+            ViewBag.ProductosDisponibles = productosDisponibles;
+            ViewBag.InventarioDisponible = productosDisponibles;
+            ViewBag.MetodosPagoDisponibles = metodosPagoDisponibles;
 
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
+            // Validaciones existentes para productos...
             if (model.Detalles == null || !model.Detalles.Any(d => d.TallaInventarioId > 0))
             {
                 ModelState.AddModelError("", "Debe seleccionar al menos un producto");
@@ -224,8 +259,51 @@ namespace Tenis3t.Controllers
                 return View(model);
             }
 
-            HttpContext.Session.SetObject("VentaViewModel", model);
-            return RedirectToAction("MetodosPago");
+            // Validaciones para métodos de pago (copiadas de MetodosPago)
+            decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
+
+            if (model.MetodosPago != null && model.MetodosPago.Count > 4)
+            {
+                ModelState.AddModelError("", "No se pueden agregar más de 4 métodos de pago");
+                return View(model);
+            }
+
+            // Filtrar solo métodos de pago válidos (con monto > 0 y método seleccionado)
+            var metodosPagoValidos = model.MetodosPago?
+                .Where(m => m.Monto > 0 && m.MetodoPagoId > 0)
+                .ToList() ?? new List<MetodoPagoViewModel>();
+
+            if (!metodosPagoValidos.Any())
+            {
+                ModelState.AddModelError("", "Debe agregar al menos un método de pago");
+                return View(model);
+            }
+
+            // Verificar que todos los métodos de pago existan en la base de datos
+            var metodosPagoIds = metodosPagoValidos.Select(m => m.MetodoPagoId).Distinct();
+            var metodosExistentes = await _context.MetodoPagos
+                .Where(m => metodosPagoIds.Contains(m.Id))
+                .Select(m => m.Id)
+                .ToListAsync();
+
+            var metodosNoExistentes = metodosPagoIds.Except(metodosExistentes).ToList();
+            if (metodosNoExistentes.Any())
+            {
+                ModelState.AddModelError("", $"Los siguientes métodos de pago no existen: {string.Join(", ", metodosNoExistentes)}");
+                return View(model);
+            }
+
+            decimal totalPagado = metodosPagoValidos.Sum(mp => mp.Monto);
+            if (Math.Abs(totalPagado - totalVenta) > 0.01m)
+            {
+                ModelState.AddModelError("",
+                    $"La suma de los pagos ({totalPagado.ToString("C", new CultureInfo("es-CO"))}) " +
+                    $"no coincide con el total de la venta ({totalVenta.ToString("C", new CultureInfo("es-CO"))})");
+                return View(model);
+            }
+
+            // Si todo está válido, procesar la venta
+            return await ProcesarVenta(model, metodosPagoValidos, usuarioActual.Id);
         }
 
         // GET: Ventas/MetodosPago
@@ -390,7 +468,7 @@ namespace Tenis3t.Controllers
                             // Verificar nuevamente que el método de pago existe
                             var metodoExiste = await _context.MetodoPagos
                                 .AnyAsync(m => m.Id == metodoPago.MetodoPagoId);
-                            
+
                             if (!metodoExiste)
                             {
                                 throw new Exception($"El método de pago con ID {metodoPago.MetodoPagoId} no existe");

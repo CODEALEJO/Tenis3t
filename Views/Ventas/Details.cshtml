@@ -1,97 +1,236 @@
 @model Tenis3t.Models.Venta
-
 @{
     ViewData["Title"] = "Detalles de Venta";
 }
 
-<h1>Detalles de Venta</h1>
-
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Id)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Id)
-        </dd>
-        <dt class="col-sm-2">
-            Fecha Venta
-        </dt>
-        <dd class="col-sm-10">
-            @Model.FechaVenta.ToString("g")
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Cliente)
-        </dt>
-        <dd class="col-sm-10">
-            @(Model.Cliente?.Nombre ?? "Público general")
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Total)
-        </dt>
-        <dd class="col-sm-10">
-            @Model.Total.ToString("C")
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Estado)
-        </dt>
-        <dd class="col-sm-10">
-            <span class="badge @(Model.Estado == "Completada" ? "badge-success" : "badge-danger")">
-                @Model.Estado
-            </span>
-        </dd>
-    </dl>
-    
-    <!-- Sección de métodos de pago -->
-    <h4>Métodos de Pago</h4>
-    <table class="table table-sm">
-        <thead>
-            <tr>
-                <th>Método</th>
-                <th>Monto</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pago in Model.Pagos)
-            {
-                <tr>
-                    <td>@pago.MetodoPago.Nombre</td>
-                    <td>@pago.Monto.ToString("C")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    
-    <h4>Productos Vendidos</h4>
-    <table class="table table-sm">
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Talla</th>
-                <th>Cantidad</th>
-                <th>Precio Unitario</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var detalle in Model.Detalles)
-            {
-                <tr>
-                    <td>@detalle.TallaInventario.Inventario.Nombre</td>
-                    <td>@detalle.TallaInventario.Talla</td>
-                    <td>@detalle.Cantidad</td>
-                    <td>@detalle.PrecioUnitario.ToString("C")</td>
-                    <td>@detalle.Subtotal.ToString("C")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-<div>
-    <a asp-action="Index" class="btn btn-primary">Volver a la lista</a>
-    @if (Model.Estado == "Completada")
-    {
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Editar</a>
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
     }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
+    .badge {
+        font-size: 0.85em;
+        padding: 0.35em 0.65em;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-receipt"></i> Detalles de Venta #@Model.Id</h1>
+        <div>
+            <a asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i> Volver a la lista
+            </a>
+            @if (Model.Estado == "Completada")
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información principal -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información de la Venta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Número de Venta:</div>
+                        <div class="col-sm-8">#@Model.Id</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Fecha y Hora:</div>
+                        <div class="col-sm-8">@Model.FechaVenta.ToString("f")</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Vendedor:</div>
+                        <div class="col-sm-8">@Model.UsuarioVendedor.UserName</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 fw-bold">Estado:</div>
+                        <div class="col-sm-8">
+                            <span class="badge @(Model.Estado == "Completada" ? "bg-success" : "bg-danger")">
+                                @Model.Estado
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del cliente -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Información del Cliente</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Cliente != null)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-4 fw-bold">Nombre:</div>
+                            <div class="col-sm-8">@Model.Cliente.Nombre</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4 fw-bold">Cédula:</div>
+                            <div class="col-sm-8">@(Model.Cliente.Cedula ?? "No especificada")</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4 fw-bold">Teléfono:</div>
+                            <div class="col-sm-8">@(Model.Cliente.Telefono ?? "No especificado")</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4 fw-bold">Email:</div>
+                            <div class="col-sm-8">@(Model.Cliente.Email ?? "No especificado")</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted">
+                            <i class="bi bi-person-x" style="font-size: 2rem;"></i>
+                            <p class="mt-2">Venta a público general</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de pagos y totales -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-credit-card"></i> Métodos de Pago</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Pagos != null && Model.Pagos.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Método</th>
+                                        <th class="text-end">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pago in Model.Pagos)
+                                    {
+                                        <tr>
+                                            <td>@pago.MetodoPago.Nombre</td>
+                                            <td class="text-end">@pago.Monto.ToString("C", new System.Globalization.CultureInfo("es-CO"))</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-primary">
+                                        <th class="text-end">Total Pagado:</th>
+                                        <th class="text-end">@Model.Pagos.Sum(p => p.Monto).ToString("C", new System.Globalization.CultureInfo("es-CO"))</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted">
+                            <i class="bi bi-credit-card" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No se registraron métodos de pago</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Resumen de totales -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Resumen de Totales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>@Model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad).ToString("C", new System.Globalization.CultureInfo("es-CO"))</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Venta:</span>
+                        <span class="fw-bold">@Model.Total.ToString("C", new System.Globalization.CultureInfo("es-CO"))</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Pagado:</span>
+                        <span class="text-success">@Model.Pagos.Sum(p => p.Monto).ToString("C", new System.Globalization.CultureInfo("es-CO"))</span>
+                    </div>
+                    @{
+                        var saldoPendiente = Model.Total - Model.Pagos.Sum(p => p.Monto);
+                    }
+                    <div class="d-flex justify-content-between">
+                        <span>Saldo Pendiente:</span>
+                        <span class="@(saldoPendiente > 0 ? "text-danger fw-bold" : "text-success")">
+                            @saldoPendiente.ToString("C", new System.Globalization.CultureInfo("es-CO"))
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos vendidos -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-cart"></i> Productos Vendidos</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Detalles != null && Model.Detalles.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Talla</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio Unitario</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detalle in Model.Detalles)
+                            {
+                                <tr>
+                                    <td>@detalle.TallaInventario.Inventario.Nombre</td>
+                                    <td>@detalle.TallaInventario.Talla</td>
+                                    <td class="text-center">@detalle.Cantidad</td>
+                                    <td class="text-end">@detalle.PrecioUnitario.ToString("C", new System.Globalization.CultureInfo("es-CO"))</td>
+                                    <td class="text-end">@((detalle.PrecioUnitario * detalle.Cantidad).ToString("C", new System.Globalization.CultureInfo("es-CO")))</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-primary">
+                                <th colspan="4" class="text-end">Total:</th>
+                                <th class="text-end">@Model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad).ToString("C", new System.Globalization.CultureInfo("es-CO"))</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted">
+                    <i class="bi bi-cart-x" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No se registraron productos en esta venta</p>
+                </div>
+            }
+        </div>
+    </div>
 </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">

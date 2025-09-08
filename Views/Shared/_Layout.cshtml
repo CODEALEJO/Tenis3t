@@ -84,6 +84,10 @@
 
     @* Ignora la sección si no se usa *@
     @RenderSection("NoNavbar", required: false)
+    
+    @* AGREGAR ESTA LÍNEA PARA RENDERIZAR LA SECCIÓN STYLES *@
+    @await RenderSectionAsync("Styles", required: false)
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 
