@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using Tenis3t.Helpers
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -48,15 +49,15 @@
                 <i class="bi bi-arrow-left-right"></i> Préstamos
             </a>
             
-            @if (User.Identity.Name == "3T")
-            {
-                <a class="nav-link btn btn-info mx-2 text-white" asp-controller="Exhibiciones" asp-action="Index">
-                    <i class="bi bi-display"></i> Exhibiciones
-                </a>
-                <a class="nav-link btn btn-secondary mx-2 text-white" asp-controller="Busqueda" asp-action="Unificada">
-                    <i class="bi bi-search-heart"></i> Búsqueda Unificada
-                </a>
-            }
+           @if (PermissionConstants.IsAdminUser(User.Identity.Name))
+{
+    <a class="nav-link btn btn-info mx-2 text-white" asp-controller="Exhibiciones" asp-action="Index">
+        <i class="bi bi-display"></i> Exhibiciones
+    </a>
+    <a class="nav-link btn btn-secondary mx-2 text-white" asp-controller="Busqueda" asp-action="Unificada">
+        <i class="bi bi-search-heart"></i> Búsqueda Unificada
+    </a>
+}
             
             <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                 <button type="submit" class="nav-link btn btn-danger mx-2 text-white">

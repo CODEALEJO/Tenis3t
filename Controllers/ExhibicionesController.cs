@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using Tenis3t.Data;
+using Tenis3t.Helpers;
 using Tenis3t.Models;
 
 namespace Tenis3t.Controllers
@@ -18,58 +19,60 @@ namespace Tenis3t.Controllers
 
         public async Task<IActionResult> Index(string cliente)
         {
-            if (User.Identity?.Name != "3T")
+            if (!PermissionConstants.IsAdminUser(User.Identity?.Name))
             {
-                return Forbid(); // O puedes redirigir a una página de error
+                return Forbid();
             }
 
-            // Consulta base que incluye las relaciones necesarias
+            // ✅ FILTRAR POR EL USUARIO ACTUAL, NO POR TODOS LOS ADMINS
+            var currentUser = User.Identity.Name;
             var query = _context.Prestamos
                 .Include(p => p.TallaInventario)
                     .ThenInclude(ti => ti.Inventario)
                 .Include(p => p.UsuarioPrestamista)
                 .Include(p => p.UsuarioReceptor)
-                .Where(p => p.UsuarioPrestamista.UserName == "3T") // Solo exhibiciones hechas por 3T
+                .Where(p => p.UsuarioPrestamista.UserName == currentUser)  // ✅ SOLO DEL USUARIO ACTUAL
                 .OrderByDescending(p => p.FechaPrestamo)
                 .AsQueryable();
 
-            // Aplicar filtro si se especificó un cliente
             if (!string.IsNullOrEmpty(cliente))
             {
                 query = query.Where(p => p.UsuarioReceptor.UserName.Contains(cliente));
             }
 
-            // Ejecutar la consulta y pasar los resultados a la vista
             var exhibiciones = await query.ToListAsync();
-            ViewBag.ClienteFiltrado = cliente; // Para mantener el valor del filtro en la vista
-
+            ViewBag.ClienteFiltrado = cliente;
             return View(exhibiciones);
         }
 
         public async Task<IActionResult> ConteoGeneral()
         {
-            if (User.Identity?.Name != "3T")
+            if (!PermissionConstants.IsAdminUser(User.Identity?.Name))
             {
                 return Forbid();
             }
 
-            // Obtener exhibiciones activas (prestadas) - Ya está filtrado por 3T
+            // ✅ FILTRAR POR EL USUARIO ACTUAL
+            var currentUser = User.Identity.Name;
+
+            // Obtener exhibiciones activas del USUARIO ACTUAL
             var exhibicionesActivas = await _context.Prestamos
                 .Include(p => p.TallaInventario)
                     .ThenInclude(ti => ti.Inventario)
                 .Include(p => p.UsuarioReceptor)
-                .Where(p => p.UsuarioPrestamista.UserName == "3T" && p.Estado == "Prestado")
+                .Where(p => p.UsuarioPrestamista.UserName == currentUser &&  // ✅ SOLO DEL USUARIO ACTUAL
+                           p.Estado == "Prestado")
                 .OrderBy(p => p.UsuarioReceptor.UserName)
                 .ToListAsync();
 
-            // Obtener inventario disponible SOLO del usuario 3T
+            // Obtener inventario disponible del USUARIO ACTUAL
             var inventarioDisponible = await _context.Inventarios
                 .Include(i => i.Tallas)
-                .Where(i => i.Usuario.UserName == "3T" && i.Tallas.Any(t => t.Cantidad > 0)) // Filtro por usuario 3T
+                .Where(i => i.Usuario.UserName == currentUser &&  // ✅ SOLO DEL USUARIO ACTUAL
+                           i.Tallas.Any(t => t.Cantidad > 0))
                 .OrderBy(i => i.Nombre)
                 .ToListAsync();
 
-            // Calcular totales
             var totalExhibiciones = exhibicionesActivas.Sum(e => e.Cantidad);
             var totalInventario = inventarioDisponible
                 .Sum(i => i.Tallas.Sum(t => t.Cantidad));
@@ -87,7 +90,7 @@ namespace Tenis3t.Controllers
 
         public async Task<IActionResult> ImprimirExhibiciones(string usuarioReceptor)
         {
-            if (User.Identity?.Name != "3T")
+            if (!PermissionConstants.IsAdminUser(User.Identity?.Name))
             {
                 return Forbid();
             }
@@ -97,12 +100,15 @@ namespace Tenis3t.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Consulta para obtener las exhibiciones del usuario receptor específico
+            // ✅ FILTRAR POR EL USUARIO ACTUAL
+            var currentUser = User.Identity.Name;
+
+            // Consulta para obtener las exhibiciones del USUARIO ACTUAL
             var exhibiciones = await _context.Prestamos
                 .Include(p => p.TallaInventario)
                     .ThenInclude(ti => ti.Inventario)
                 .Include(p => p.UsuarioReceptor)
-                .Where(p => p.UsuarioPrestamista.UserName == "3T" &&
+                .Where(p => p.UsuarioPrestamista.UserName == currentUser &&  // ✅ SOLO DEL USUARIO ACTUAL
                            p.UsuarioReceptor.UserName == usuarioReceptor)
                 .OrderByDescending(p => p.FechaPrestamo)
                 .ToListAsync();
