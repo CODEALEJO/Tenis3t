@@ -241,7 +241,7 @@ namespace Tenis3t.Controllers
 
             // Preparar las tallas para la vista
             var tallasDisponibles = inventario.Genero == "hombre" ?
-         new[] { "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
+         new[] { "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
          new[] { "34", "35", "36", "37", "38", "39", "40" };
 
 
