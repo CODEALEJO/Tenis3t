@@ -1,10 +1,11 @@
 @model IEnumerable<Tenis3t.Models.Prestamo>
 @using Microsoft.AspNetCore.Identity
+@using Tenis3t.Helpers
 @inject UserManager<IdentityUser> UserManager
 @{
     ViewData["Title"] = "Préstamos";
     var currentUser = await UserManager.GetUserAsync(User);
-    var is3TUser = currentUser.UserName == "3T";
+    var isAdminUser = currentUser != null && PermissionConstants.IsAdminUser(currentUser.UserName);;
 }
 
 <div class="container">
@@ -71,21 +72,21 @@
                 @if (item.Estado == "Prestado")
                 {
                     <div class="mt-2 btn-group w-100" role="group">
-                        @if (item.UsuarioReceptorId == currentUser.Id)
-                        {
-                            <form asp-action="Devolver" method="post" class="d-inline @(is3TUser ? "w-50" : "w-100")">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
-                            </form>
-                        }
-                        
-                        @if (is3TUser && item.UsuarioPrestamistaId == currentUser.Id)
-                        {
-                            <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50" asp-antiforgery="true">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="btn btn-success btn-sm w-100">Marcar como Vendido</button>
-                            </form>
-                        }
+                  @if (item.UsuarioReceptorId == currentUser.Id)
+                {
+                    <form asp-action="Devolver" method="post" class="d-inline @(isAdminUser ? "w-50" : "w-100")">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
+                    </form>
+                }
+
+                                    @if (isAdminUser && item.UsuarioPrestamistaId == currentUser.Id)
+                {
+                    <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50" asp-antiforgery="true">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn btn-success btn-sm w-100">Marcar como Vendido</button>
+                    </form>
+                }
                     </div>
                 }
                 else
