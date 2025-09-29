@@ -228,7 +228,6 @@ namespace Tenis3t.Controllers
 
         public async Task<IActionResult> Edit(int id)
         {
-            ModelState.Clear();
             var usuarioActualId = _userManager.GetUserId(User);
             var inventario = await _context.Inventarios
                 .Include(i => i.Tallas)
@@ -241,9 +240,8 @@ namespace Tenis3t.Controllers
 
             // Preparar las tallas para la vista
             var tallasDisponibles = inventario.Genero == "hombre" ?
-         new[] { "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
-         new[] { "34", "35", "36", "37", "38", "39", "40", "41", "42", "43" };
-
+                new[] { "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
+                new[] { "34", "35", "36", "37", "38", "39", "40", "41", "42", "43" };
 
             ViewBag.TallasDisponibles = tallasDisponibles;
             ViewBag.Generos = new List<SelectListItem>
@@ -251,7 +249,6 @@ namespace Tenis3t.Controllers
         new SelectListItem { Value = "hombre", Text = "Hombre", Selected = inventario.Genero == "hombre" },
         new SelectListItem { Value = "dama", Text = "Dama", Selected = inventario.Genero == "dama" }
     };
-
             return View(inventario);
         }
 
@@ -372,19 +369,32 @@ namespace Tenis3t.Controllers
         }
 
         // Método auxiliar para recargar datos
-        private async Task<IActionResult> RecargarDatosParaVista(int id, Inventario inventario)
+        private async Task<IActionResult> RecargarDatosParaVista(int id, Inventario inventarioForm)
         {
             var usuarioActualId = _userManager.GetUserId(User);
-            var productoCompleto = await _context.Inventarios
+            var inventarioBD = await _context.Inventarios
                 .Include(i => i.Tallas)
                 .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == usuarioActualId);
 
-            if (productoCompleto != null)
+            if (inventarioBD == null)
             {
-                // Mantener los valores que el usuario ingresó, pero asegurar que las tallas estén cargadas
-                inventario.Tallas = productoCompleto.Tallas;
+                return NotFound();
             }
 
+            // Usamos siempre los valores de BD como base
+            var inventario = inventarioBD;
+
+            // Si el usuario alcanzó a editar campos antes del error, puedes sobrescribirlos aquí:
+            if (!string.IsNullOrEmpty(inventarioForm.Nombre))
+                inventario.Nombre = inventarioForm.Nombre;
+            if (!string.IsNullOrEmpty(inventarioForm.Genero))
+                inventario.Genero = inventarioForm.Genero;
+            if (inventarioForm.Costo > 0)
+                inventario.Costo = inventarioForm.Costo;
+            if (inventarioForm.PrecioVenta > 0)
+                inventario.PrecioVenta = inventarioForm.PrecioVenta;
+
+            // Preparar tallas
             var tallasDisponibles = inventario.Genero == "hombre" ?
                 new[] { "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50" } :
                 new[] { "34", "35", "36", "37", "38", "39", "40", "41", "42", "43" };
@@ -396,8 +406,9 @@ namespace Tenis3t.Controllers
         new SelectListItem { Value = "dama", Text = "Dama", Selected = inventario.Genero == "dama" }
     };
 
-            return View(inventario);
+            return View("Edit", inventario);
         }
+
         public async Task<IActionResult> Delete(int id)
         {
             var usuarioActualId = _userManager.GetUserId(User);
