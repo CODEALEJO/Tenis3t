@@ -5,7 +5,7 @@
 @{
     ViewData["Title"] = "Préstamos";
     var currentUser = await UserManager.GetUserAsync(User);
-    var isAdminUser = currentUser != null && PermissionConstants.IsAdminUser(currentUser.UserName);;
+    var isAdminUser = currentUser != null && PermissionConstants.IsAdminUser(currentUser.UserName);
 }
 
 <div class="container">
@@ -27,11 +27,11 @@
     <div class="mb-4">
         <div class="btn-group btn-group-sm mb-2" role="group">
             <a asp-action="Index" asp-route-filtro="todos"
-                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
+               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
             <a asp-action="Index" asp-route-filtro="realizados"
-                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
+               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
             <a asp-action="Index" asp-route-filtro="recibidos"
-                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
+               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
         </div>
         <a asp-action="Create" class="btn btn-success btn-sm float-end">Nuevo Préstamo</a>
     </div>
@@ -42,7 +42,9 @@
             <div class="list-group-item mb-3">
                 <div class="d-flex justify-content-between">
                     <h6 class="mb-1">@item.TallaInventario.Inventario.Nombre (@item.TallaInventario.Talla)</h6>
-                    <span class="badge @(item.Estado == "Prestado" ? "bg-warning" : item.Estado == "Devuelto" ? "bg-success" : "bg-secondary")">
+                    <span class="badge @(item.Estado?.Trim().Equals("Prestado", StringComparison.OrdinalIgnoreCase) == true ? "bg-warning" 
+                                   : item.Estado?.Trim().Equals("Devuelto", StringComparison.OrdinalIgnoreCase) == true ? "bg-success" 
+                                   : "bg-secondary")">
                         @item.Estado
                     </span>
                 </div>
@@ -68,25 +70,25 @@
                         </div>
                     }
                 </div>
-                
-                @if (item.Estado == "Prestado")
+
+                @if (item.Estado?.Trim().Equals("Prestado", StringComparison.OrdinalIgnoreCase) == true)
                 {
                     <div class="mt-2 btn-group w-100" role="group">
-                  @if (item.UsuarioReceptorId == currentUser.Id)
-                {
-                    <form asp-action="Devolver" method="post" class="d-inline @(isAdminUser ? "w-50" : "w-100")">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
-                    </form>
-                }
+                        @if (item.UsuarioReceptorId == currentUser.Id)
+                        {
+                            <form asp-action="Devolver" method="post" class="d-inline @(isAdminUser ? "w-50" : "w-100")">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
+                            </form>
+                        }
 
-                                    @if (isAdminUser && item.UsuarioPrestamistaId == currentUser.Id)
-                {
-                    <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50" asp-antiforgery="true">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" class="btn btn-success btn-sm w-100">Marcar como Vendido</button>
-                    </form>
-                }
+                        @if (isAdminUser && item.UsuarioPrestamistaId == currentUser.Id)
+                        {
+                            <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50" asp-antiforgery="true">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="btn btn-success btn-sm w-100">Marcar como Vendido</button>
+                            </form>
+                        }
                     </div>
                 }
                 else
