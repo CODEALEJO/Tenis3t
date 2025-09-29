@@ -14,7 +14,6 @@ namespace Tenis3t.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<InventarioController> _logger;
-        private const string DeletePassword = "3T2025"; // Misma contraseña que en Ventas
 
         public InventarioController(
             ApplicationDbContext context,
@@ -105,18 +104,9 @@ namespace Tenis3t.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
+        public async Task<IActionResult> Create(Inventario inventario, Dictionary<string, int> tallas)
         {
-            if (claveSeguridad != DeletePassword)
-            {
-                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-                ViewBag.Generos = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "hombre", Text = "Hombre" },
-            new SelectListItem { Value = "dama", Text = "Dama" }
-        };
-                return View(inventario);
-            }
+
 
             var usuarioActual = await _userManager.GetUserAsync(User);
             inventario.UsuarioId = usuarioActual.Id;
@@ -213,7 +203,7 @@ namespace Tenis3t.Controllers
                 new SelectListItem { Value = "hombre", Text = "Hombre" },
                 new SelectListItem { Value = "dama", Text = "Dama" }
             };
-            _logger.LogInformation($"Clave recibida: {claveSeguridad}, Esperada: {DeletePassword}");
+            // _logger.LogInformation($"Clave recibida: {claveSeguridad}, Esperada: {DeletePassword}");
             _logger.LogInformation($"ModelState válido: {ModelState.IsValid}");
             if (!ModelState.IsValid)
             {
@@ -254,15 +244,8 @@ namespace Tenis3t.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas, string claveSeguridad)
+        public async Task<IActionResult> Edit(int id, Inventario inventario, Dictionary<string, int> tallas)
         {
-            if (claveSeguridad != DeletePassword)
-            {
-                TempData["ErrorMessage"] = "Clave de seguridad incorrecta";
-                // Recargar los datos para mostrar el formulario con errores
-                return await RecargarDatosParaVista(id, inventario);
-            }
-
             var usuarioActualId = _userManager.GetUserId(User);
 
             if (id != inventario.Id)
@@ -301,8 +284,13 @@ namespace Tenis3t.Controllers
                     // Actualizar propiedades básicas
                     inventarioExistente.Nombre = inventario.Nombre;
                     inventarioExistente.Genero = inventario.Genero;
-                    inventarioExistente.Costo = inventario.Costo;
-                    inventarioExistente.PrecioVenta = inventario.PrecioVenta;
+
+                    // ✅ Mantener costo/precio anteriores si el usuario no los cambió
+                    if (inventario.Costo > 0)
+                        inventarioExistente.Costo = inventario.Costo;
+
+                    if (inventario.PrecioVenta > 0)
+                        inventarioExistente.PrecioVenta = inventario.PrecioVenta;
 
                     // Procesar tallas
                     if (tallas != null)
@@ -368,6 +356,7 @@ namespace Tenis3t.Controllers
             return await RecargarDatosParaVista(id, inventario);
         }
 
+
         // Método auxiliar para recargar datos
         private async Task<IActionResult> RecargarDatosParaVista(int id, Inventario inventarioForm)
         {
@@ -425,13 +414,9 @@ namespace Tenis3t.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id, string claveSeguridad)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (claveSeguridad != DeletePassword)
-            {
-                TempData["ErrorMessage"] = "";
-                return RedirectToAction(nameof(Index));
-            }
+
             try
             {
                 var usuarioActualId = _userManager.GetUserId(User);

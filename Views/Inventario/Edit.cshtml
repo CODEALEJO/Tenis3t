@@ -37,14 +37,14 @@
 
         <div class="mb-3">
             <label asp-for="Costo" class="form-label">Costo Unitario</label>
-            <input asp-for="Costo" class="form-control" id="costoInput" />
+            <input asp-for="Costo" type="hidden" />
             <span asp-validation-for="Costo" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
             <label asp-for="PrecioVenta" class="form-label">Precio de Venta</label>
-            <input asp-for="PrecioVenta" class="form-control" id="precioVentaInput" />
-            <span asp-validation-for="PrecioVenta" class="text-danger"></span>
+            <input asp-for="PrecioVenta" type="hidden" /> <span asp-validation-for="PrecioVenta"
+                class="text-danger"></span>
         </div>
 
         <!-- Sección de tallas -->
@@ -59,16 +59,16 @@
                             <label class="form-label">Talla @talla</label>
                         </div>
                         <div class="col-md-4">
-                            <input type="number" name="tallas[@talla]" class="form-control talla-input" 
-                                   min="0" value="@cantidad" data-talla="@talla" />
+                            <input type="number" name="tallas[@talla]" class="form-control talla-input" min="0"
+                                value="@cantidad" data-talla="@talla" />
                         </div>
                     </div>
                 }
             </div>
             <div class="mt-2">
                 <label class="form-label">Total en Stock:</label>
-                <input type="text" class="form-control" id="totalStock" readonly 
-                       value="@(Model.Tallas?.Sum(t => t.Cantidad) ?? 0)" />
+                <input type="text" class="form-control" id="totalStock" readonly
+                    value="@(Model.Tallas?.Sum(t => t.Cantidad) ?? 0)" />
             </div>
         </div>
 
@@ -76,25 +76,25 @@
             <div class="row">
                 <div class="col-md-4">
                     <label class="form-label">Ganancia por Unidad</label>
-                    <input type="text" class="form-control" id="gananciaUnidad" readonly 
-                           value="@((Model.PrecioVenta - Model.Costo).ToString("N0"))" />
+                    <input type="text" class="form-control" id="gananciaUnidad" readonly
+                        value="@((Model.PrecioVenta - Model.Costo).ToString("N0"))" />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Ganancia Total</label>
-                    <input type="text" class="form-control" id="gananciaTotal" readonly 
-                           value="@(((Model.PrecioVenta - Model.Costo) * (Model.Tallas?.Sum(t => t.Cantidad) ?? 0)).ToString("N0"))" />
+                    <input type="text" class="form-control" id="gananciaTotal" readonly
+                        value="@(((Model.PrecioVenta - Model.Costo) * (Model.Tallas?.Sum(t => t.Cantidad) ?? 0)).ToString("N0"))" />
                 </div>
             </div>
         </div>
 
-        <div class="mb-3">
+        @* <div class="mb-3">
             <label for="claveSeguridad" class="form-label">Clave de Seguridad</label>
             <input type="password" name="claveSeguridad" class="form-control" required />
             @if (ViewData.ModelState["claveSeguridad"]?.Errors?.Count > 0)
             {
                 <span class="text-danger">@ViewData.ModelState["claveSeguridad"].Errors.First().ErrorMessage</span>
             }
-        </div>
+        </div> *@
 
         <div class="mb-3">
             <button type="submit" class="btn btn-success">
@@ -143,18 +143,18 @@
                     // Crear inputs para cada talla, preservando valores existentes si los hay
                     tallasPorGenero[genero].forEach(talla => {
                         const valorExistente = valoresTallasActuales[talla] || 0;
-                        
+
                         const div = document.createElement('div');
                         div.className = 'row mb-2';
                         div.innerHTML = `
-                            <div class="col-md-2">
-                                <label class="form-label">Talla ${talla}</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
-                                       min="0" value="${valorExistente}" data-talla="${talla}" />
-                            </div>
-                        `;
+                                <div class="col-md-2">
+                                    <label class="form-label">Talla ${talla}</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" name="tallas[${talla}]" class="form-control talla-input" 
+                                           min="0" value="${valorExistente}" data-talla="${talla}" />
+                                </div>
+                            `;
                         tallasContainer.appendChild(div);
                     });
 
