@@ -285,12 +285,9 @@ namespace Tenis3t.Controllers
                     inventarioExistente.Nombre = inventario.Nombre;
                     inventarioExistente.Genero = inventario.Genero;
 
-                    // ✅ Mantener costo/precio anteriores si el usuario no los cambió
-                    if (inventario.Costo > 0)
-                        inventarioExistente.Costo = inventario.Costo;
-
-                    if (inventario.PrecioVenta > 0)
-                        inventarioExistente.PrecioVenta = inventario.PrecioVenta;
+                    // ✅ Ahora siempre actualiza costo y precio
+                    inventarioExistente.Costo = inventario.Costo;
+                    inventarioExistente.PrecioVenta = inventario.PrecioVenta;
 
                     // Procesar tallas
                     if (tallas != null)
@@ -311,7 +308,8 @@ namespace Tenis3t.Controllers
                         // Actualizar o agregar tallas
                         foreach (var talla in tallas)
                         {
-                            if (talla.Value > 0) // Solo procesar si la cantidad es positiva
+                            // Validar que no sea nulo ni vacío
+                            if (talla.Value >= 0)
                             {
                                 var tallaExistente = inventarioExistente.Tallas
                                     .FirstOrDefault(t => t.Talla == talla.Key);
@@ -331,6 +329,7 @@ namespace Tenis3t.Controllers
                                 }
                             }
                         }
+
                     }
 
                     await _context.SaveChangesAsync();
@@ -353,8 +352,10 @@ namespace Tenis3t.Controllers
                     ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
                 }
             }
+
             return await RecargarDatosParaVista(id, inventario);
         }
+
 
 
         // Método auxiliar para recargar datos
