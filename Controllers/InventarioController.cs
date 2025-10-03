@@ -497,35 +497,97 @@ namespace Tenis3t.Controllers
 
                     if (!string.IsNullOrEmpty(inventario.Nombre))
                     {
-                        _context.Add(inventario);
-                        await _context.SaveChangesAsync();
+                        // Buscar si ya existe producto con el mismo Nombre y Genero
+                        var existente = await _context.Inventarios
+                            .FirstOrDefaultAsync(x => x.Nombre == inventario.Nombre && x.Genero == inventario.Genero);
 
-                        // Procesar tallas
-                        if (tallas != null && tallas.Count > i && !string.IsNullOrEmpty(tallas[i]))
+                        if (existente != null)
                         {
-                            try
+                            // 🔹 Actualizar precios si cambiaron
+                            if (existente.Costo != inventario.Costo)
+                                existente.Costo = inventario.Costo;
+
+                            if (existente.PrecioVenta != inventario.PrecioVenta)
+                                existente.PrecioVenta = inventario.PrecioVenta;
+
+                            _context.Update(existente);
+                            await _context.SaveChangesAsync();
+
+                            // 🔹 Procesar tallas nuevas
+                            if (tallas != null && tallas.Count > i && !string.IsNullOrEmpty(tallas[i]))
                             {
-                                var tallasDict = JsonSerializer.Deserialize<Dictionary<string, int>>(tallas[i]);
-                                if (tallasDict != null)
+                                try
                                 {
-                                    foreach (var talla in tallasDict)
+                                    var tallasDict = JsonSerializer.Deserialize<Dictionary<string, int>>(tallas[i]);
+                                    if (tallasDict != null)
                                     {
-                                        if (talla.Value > 0)
+                                        foreach (var talla in tallasDict)
                                         {
-                                            _context.TallasInventario.Add(new TallaInventario
+                                            if (talla.Value > 0)
                                             {
-                                                InventarioId = inventario.Id,
-                                                Talla = talla.Key,
-                                                Cantidad = talla.Value
-                                            });
+                                                var tallaExistente = await _context.TallasInventario
+                                                    .FirstOrDefaultAsync(t => t.InventarioId == existente.Id && t.Talla == talla.Key);
+
+                                                if (tallaExistente != null)
+                                                {
+                                                    // Si ya existe esa talla -> sumar cantidad
+                                                    tallaExistente.Cantidad += talla.Value;
+                                                    _context.Update(tallaExistente);
+                                                }
+                                                else
+                                                {
+                                                    // Si no existe -> crear nueva talla
+                                                    _context.TallasInventario.Add(new TallaInventario
+                                                    {
+                                                        InventarioId = existente.Id,
+                                                        Talla = talla.Key,
+                                                        Cantidad = talla.Value
+                                                    });
+                                                }
+                                            }
                                         }
+                                        await _context.SaveChangesAsync();
                                     }
-                                    await _context.SaveChangesAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Error deserializando tallas para producto {Producto}", inventario.Nombre);
                                 }
                             }
-                            catch (Exception ex)
+                        }
+                        else
+                        {
+                            // 🔹 Si no existe -> crear nuevo producto
+                            _context.Add(inventario);
+                            await _context.SaveChangesAsync();
+
+                            // Procesar tallas para el nuevo producto
+                            if (tallas != null && tallas.Count > i && !string.IsNullOrEmpty(tallas[i]))
                             {
-                                _logger.LogError(ex, "Error deserializando tallas para producto {Producto}", inventario.Nombre);
+                                try
+                                {
+                                    var tallasDict = JsonSerializer.Deserialize<Dictionary<string, int>>(tallas[i]);
+                                    if (tallasDict != null)
+                                    {
+                                        foreach (var talla in tallasDict)
+                                        {
+                                            if (talla.Value > 0)
+                                            {
+                                                _context.TallasInventario.Add(new TallaInventario
+                                                {
+                                                    InventarioId = inventario.Id,
+                                                    Talla = talla.Key,
+                                                    Cantidad = talla.Value
+                                                });
+                                            }
+                                        }
+                                        await _context.SaveChangesAsync();
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Error deserializando tallas para producto {Producto}", inventario.Nombre);
+                                }
                             }
                         }
                     }
@@ -538,7 +600,6 @@ namespace Tenis3t.Controllers
             TempData["ErrorMessage"] = "No se recibieron productos válidos";
             return View();
         }
-
 
     }
 }
