@@ -6,6 +6,7 @@ using Tenis3t.Data;
 using Tenis3t.Models;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace Tenis3t.Controllers
 {
@@ -13,26 +14,24 @@ namespace Tenis3t.Controllers
     public class BusquedaController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public BusquedaController(ApplicationDbContext context)
+        public BusquedaController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Busqueda/Unificada
-        public IActionResult Unificada(string nombre)
+        public async Task<IActionResult> Unificada(string nombre)
         {
-            // Solo permitir al usuario 3T
-            if (User.Identity?.Name != "3T")
-            {
-                TempData["Error"] = "Solo el usuario 3T puede acceder a esta función";
-                return RedirectToAction("Index", "Home");
-            }
+            // Obtener usuario actual
+            var usuarioActualId = _userManager.GetUserId(User);
 
             if (string.IsNullOrEmpty(nombre))
             {
-                return View(new BusquedaUnificadaViewModel 
-                { 
+                return View(new BusquedaUnificadaViewModel
+                {
                     NombreProducto = "",
                     EnInventario = new List<ResultadoInventario>(),
                     EnExhibicion = new List<ResultadoExhibicion>()
@@ -46,12 +45,13 @@ namespace Tenis3t.Controllers
                 EnExhibicion = new List<ResultadoExhibicion>()
             };
 
-            // Buscar en inventario
-            var enInventario = _context.Inventarios
+            // Buscar en inventario SOLO del usuario actual
+            var enInventario = await _context.Inventarios
                 .Include(i => i.Tallas)
                 .Include(i => i.Usuario)
-                .Where(i => i.Nombre.ToLower().Contains(nombre.ToLower()))
-                .ToList();
+                .Where(i => i.UsuarioId == usuarioActualId &&
+                            i.Nombre.ToLower().Contains(nombre.ToLower()))
+                .ToListAsync();
 
             foreach (var inventario in enInventario)
             {
@@ -68,14 +68,15 @@ namespace Tenis3t.Controllers
                 });
             }
 
-            // Buscar en exhibiciones
-            var enExhibicion = _context.Prestamos
+            // Buscar en exhibiciones SOLO del usuario actual
+            var enExhibicion = await _context.Prestamos
                 .Include(p => p.TallaInventario)
                     .ThenInclude(ti => ti.Inventario)
                 .Include(p => p.UsuarioReceptor)
-                .Where(p => p.TallaInventario.Inventario.Nombre.ToLower().Contains(nombre.ToLower()) && 
-                           p.Estado == "Prestado")
-                .ToList();
+                .Where(p => p.TallaInventario.Inventario.UsuarioId == usuarioActualId &&
+                            p.TallaInventario.Inventario.Nombre.ToLower().Contains(nombre.ToLower()) &&
+                            p.Estado == "Prestado")
+                .ToListAsync();
 
             foreach (var exhibicion in enExhibicion)
             {

@@ -1,0 +1,114 @@
+@model List<Tenis3t.Models.Inventario>
+@{
+    ViewData["Title"] = "Cargar Múltiples Productos";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Cargar Varios Productos</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <form asp-action="CreateMultiple" method="post">
+        <div id="productosContainer">
+            <!-- Productos se agregarán aquí -->
+        </div>
+
+        <div class="mb-3">
+            <button type="button" class="btn btn-outline-primary" onclick="agregarProducto()">
+                <i class="bi bi-plus-circle"></i> Agregar producto
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            <i class="bi bi-upload"></i> Guardar todos los productos
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    let productoIndex = 0;
+
+    function agregarProducto() {
+        const container = document.getElementById("productosContainer");
+
+        const card = document.createElement("div");
+        card.classList.add("card", "mb-3", "p-3");
+        card.innerHTML = `
+            <h5>Producto #${productoIndex + 1}</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="inventarios[${productoIndex}].Nombre" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Género</label>
+                    <select class="form-select" name="inventarios[${productoIndex}].Genero" required>
+                        <option value="hombre">Hombre</option>
+                        <option value="dama">Dama</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Costo</label>
+                    <input type="number" step="0.01" class="form-control" name="inventarios[${productoIndex}].Costo" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Precio Venta</label>
+                    <input type="number" step="0.01" class="form-control" name="inventarios[${productoIndex}].PrecioVenta" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tallas</label>
+                    <div id="tallasContainer-${productoIndex}" class="border rounded p-2 mb-2 bg-light">
+                        <!-- Aquí se agregan tallas dinámicamente -->
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarTalla(${productoIndex})">
+                        <i class="bi bi-plus"></i> Añadir talla
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" name="tallas[${productoIndex}]" />
+            <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove()">Eliminar producto</button>
+        `;
+
+        container.appendChild(card);
+        productoIndex++;
+    }
+
+    function agregarTalla(index) {
+        const container = document.getElementById(`tallasContainer-${index}`);
+        const div = document.createElement("div");
+        div.classList.add("d-flex", "gap-2", "mb-1", "align-items-center");
+        div.innerHTML = `
+            <input type="text" class="form-control form-control-sm w-50" placeholder="Talla (ej: 38)" oninput="actualizarTallas(${index})" />
+            <input type="number" class="form-control form-control-sm w-50" placeholder="Cantidad" oninput="actualizarTallas(${index})" />
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.remove(); actualizarTallas(${index})">X</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function actualizarTallas(index) {
+        const container = document.getElementById(`tallasContainer-${index}`);
+        const hidden = document.querySelector(`input[name="tallas[${index}]"]`);
+        let tallasDict = {};
+
+        container.querySelectorAll("div").forEach(div => {
+            const inputs = div.querySelectorAll("input");
+            const talla = inputs[0].value.trim();
+            const cantidad = parseInt(inputs[1].value) || 0;
+            if (talla && cantidad > 0) {
+                tallasDict[talla] = cantidad;
+            }
+        });
+
+        hidden.value = JSON.stringify(tallasDict);
+    }
+</script>
+}

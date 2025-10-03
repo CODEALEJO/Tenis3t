@@ -58,31 +58,40 @@
                             <i class="bi bi-search"></i>
                             <span class="ms-1 d-none d-sm-inline">Buscar</span>
                         </button>
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                            data-bs-target="#createModal">
                             <i class="bi bi-plus-circle"></i>
                             <span class="ms-1 d-none d-sm-inline">Nuevo Producto</span>
                         </button>
+
+                        <button type="button" class="btn btn-warning"
+                            onclick="location.href='@Url.Action("CreateMultiple", "Inventario")'">
+                            <i class="bi bi-boxes"></i>
+                            <span class="ms-1 d-none d-sm-inline">Cargar Productos</span>
+                        </button>
+
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
-    
+
     <!-- Modal para crear nuevo producto -->
     <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="createModalLabel">Nuevo Producto</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <form id="createForm" method="post" asp-action="Create">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="claveSeguridadCreate" class="form-label">Clave de Seguridad</label>
-                            <input type="password" class="form-control clave-seguridad" 
-                                   id="claveSeguridadCreate" name="claveSeguridad" required />
+                            <input type="password" class="form-control clave-seguridad" id="claveSeguridadCreate"
+                                name="claveSeguridad" required />
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -105,7 +114,8 @@
                         aria-controls="collapse-@inventario.Id">
                         <div class="d-flex justify-content-between w-100">
                             <span class="fw-bold">@inventario.Nombre</span>
-                            <span class="text-muted me-3">Género: @(inventario.Genero == "hombre" ? "Hombre" : "Dama")</span>
+                            <span class="text-muted me-3">Género: @(inventario.Genero == "hombre" ? "Hombre" :
+                                                            "Dama")</span>
                             <span class="text-muted me-3">Stock: @inventario.Cantidad</span>
                             <span class="badge bg-success">Ganancia: $@inventario.GananciaTotalFormateado</span>
                         </div>
@@ -149,17 +159,17 @@
 
                         <div class="d-flex justify-content-end mt-3">
                             <!-- Botón de Editar con modal -->
-                            <button type="button" class="btn btn-warning btn-sm me-2" 
-                                    data-bs-toggle="modal" data-bs-target="#editModal-@inventario.Id">
+                            <button type="button" class="btn btn-warning btn-sm me-2" data-bs-toggle="modal"
+                                data-bs-target="#editModal-@inventario.Id">
                                 <i class="bi bi-pencil"></i> Editar
                             </button>
-                            
+
                             <!-- Botón de Eliminar con modal -->
-                            <button type="button" class="btn btn-danger btn-sm me-2" 
-                                    data-bs-toggle="modal" data-bs-target="#deleteModal-@inventario.Id">
+                            <button type="button" class="btn btn-danger btn-sm me-2" data-bs-toggle="modal"
+                                data-bs-target="#deleteModal-@inventario.Id">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
-                            
+
                             <a asp-action="Imprimir" asp-route-id="@inventario.Id" target="_blank"
                                 class="btn btn-primary btn-sm me-2">
                                 <i class="bi bi-receipt-cutoff"></i> Imprimir
@@ -168,22 +178,25 @@
                     </div>
                 </div>
             </div>
-            
-             <!-- Modal para editar producto -->
-            <div class="modal fade" id="editModal-@inventario.Id" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+
+            <!-- Modal para editar producto -->
+            <div class="modal fade" id="editModal-@inventario.Id" tabindex="-1" aria-labelledby="editModalLabel"
+                aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header bg-warning text-white">
                             <h5 class="modal-title" id="editModalLabel">Editar Producto</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                         </div>
                         <form id="editForm-@inventario.Id" method="post" asp-action="Edit">
                             <div class="modal-body">
                                 <input type="hidden" name="id" value="@inventario.Id" />
                                 <div class="mb-3">
-                                    <label for="claveSeguridadEdit-@inventario.Id" class="form-label">Clave de Seguridad</label>
-                                    <input type="password" class="form-control clave-seguridad" 
-                                           id="claveSeguridadEdit-@inventario.Id" name="claveSeguridad" required />
+                                    <label for="claveSeguridadEdit-@inventario.Id" class="form-label">Clave de
+                                        Seguridad</label>
+                                    <input type="password" class="form-control clave-seguridad"
+                                        id="claveSeguridadEdit-@inventario.Id" name="claveSeguridad" required />
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -194,14 +207,16 @@
                     </div>
                 </div>
             </div>
-            
-              <!-- Modal para eliminar producto -->
-            <div class="modal fade" id="deleteModal-@inventario.Id" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+
+            <!-- Modal para eliminar producto -->
+            <div class="modal fade" id="deleteModal-@inventario.Id" tabindex="-1" aria-labelledby="deleteModalLabel"
+                aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header bg-danger text-white">
                             <h5 class="modal-title" id="deleteModalLabel">Eliminar Producto</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                         </div>
                         <form id="deleteForm-@inventario.Id" method="post" asp-action="Delete">
                             <div class="modal-body">
@@ -209,9 +224,10 @@
                                 <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
                                 <input type="hidden" name="id" value="@inventario.Id" />
                                 <div class="mb-3">
-                                    <label for="claveSeguridadDelete-@inventario.Id" class="form-label">Clave de Seguridad</label>
-                                    <input type="password" class="form-control clave-seguridad" 
-                                           id="claveSeguridadDelete-@inventario.Id" name="claveSeguridad" required />
+                                    <label for="claveSeguridadDelete-@inventario.Id" class="form-label">Clave de
+                                        Seguridad</label>
+                                    <input type="password" class="form-control clave-seguridad"
+                                        id="claveSeguridadDelete-@inventario.Id" name="claveSeguridad" required />
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -232,18 +248,18 @@
 @section Scripts {
     <script>
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const claveCorrecta = "3T2025"; // Misma clave que en el controlador
 
-             
+
             // Manejador para todos los formularios con validación de contraseña
             document.querySelectorAll('form[id^="createForm"], form[id^="editForm"], form[id^="deleteForm"]').forEach(form => {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', function (e) {
                     e.preventDefault();
-                    
+
                     const claveInput = this.querySelector('.clave-seguridad');
                     const errorMsg = this.querySelector('.clave-error');
-                    
+
                     // Validar clave
                     if (claveInput.value === claveCorrecta) {
                         // Clave correcta, enviar formulario
@@ -255,7 +271,7 @@
                     }
                 });
             });
-            
+
             // Limpiar errores cuando se cierra el modal
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.addEventListener('hidden.bs.modal', function () {
@@ -267,42 +283,42 @@
                     });
                 });
             });
-            
-        document.addEventListener('DOMContentLoaded', function () {
-            const nombreInput = document.getElementById('nombre');
-            const searchForm = document.querySelector('form[method="get"]');
 
-            function handleNombreChange() {
-                if (nombreInput.value === '') {
-                    searchForm.submit();
+            document.addEventListener('DOMContentLoaded', function () {
+                const nombreInput = document.getElementById('nombre');
+                const searchForm = document.querySelector('form[method="get"]');
+
+                function handleNombreChange() {
+                    if (nombreInput.value === '') {
+                        searchForm.submit();
+                    }
                 }
-            }
 
-            nombreInput.addEventListener('input', function () {
-                clearTimeout(this.timer);
-                this.timer = setTimeout(function () {
-                    handleNombreChange();
-                }, 500);
-            });
-            
-            // Actualizar el campo oculto cuando se selecciona un género
-            document.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const genero = this.getAttribute('href').split('genero=')[1];
-                    document.getElementById('genero').value = genero;
-                    window.location.href = this.getAttribute('href');
+                nombreInput.addEventListener('input', function () {
+                    clearTimeout(this.timer);
+                    this.timer = setTimeout(function () {
+                        handleNombreChange();
+                    }, 500);
                 });
-            });
-            
-            // Cierra automáticamente los mensajes de alerta después de 5 segundos
-            setTimeout(function() {
-                var alerts = document.querySelectorAll('.alert');
-                alerts.forEach(function(alert) {
-                    var bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
+
+                // Actualizar el campo oculto cuando se selecciona un género
+                document.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const genero = this.getAttribute('href').split('genero=')[1];
+                        document.getElementById('genero').value = genero;
+                        window.location.href = this.getAttribute('href');
+                    });
                 });
-            }, 5000);
-        });
+
+                // Cierra automáticamente los mensajes de alerta después de 5 segundos
+                setTimeout(function () {
+                    var alerts = document.querySelectorAll('.alert');
+                    alerts.forEach(function (alert) {
+                        var bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    });
+                }, 5000);
+            });
     </script>
 }

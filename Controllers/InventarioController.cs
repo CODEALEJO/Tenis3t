@@ -5,6 +5,7 @@ using Tenis3t.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Text.Json;
 
 namespace Tenis3t.Controllers
 {
@@ -462,5 +463,82 @@ namespace Tenis3t.Controllers
             var usuarioActualId = _userManager.GetUserId(User);
             return _context.Inventarios.Any(e => e.Id == id && e.UsuarioId == usuarioActualId);
         }
+
+
+        // GET: Inventario/CreateMultiple
+        public IActionResult CreateMultiple()
+        {
+            ViewBag.Generos = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "hombre", Text = "Hombre" },
+        new SelectListItem { Value = "dama", Text = "Dama" }
+    };
+
+            return View();
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateMultiple(List<Inventario> inventarios, List<string> tallas)
+        {
+            var usuarioActual = await _userManager.GetUserAsync(User);
+
+            if (inventarios != null && inventarios.Count > 0)
+            {
+                for (int i = 0; i < inventarios.Count; i++)
+                {
+                    var inventario = inventarios[i];
+                    inventario.UsuarioId = usuarioActual.Id;
+
+                    ModelState.Remove("Usuario");
+                    ModelState.Remove("UsuarioId");
+                    ModelState.Remove("Tallas");
+
+                    if (!string.IsNullOrEmpty(inventario.Nombre))
+                    {
+                        _context.Add(inventario);
+                        await _context.SaveChangesAsync();
+
+                        // Procesar tallas
+                        if (tallas != null && tallas.Count > i && !string.IsNullOrEmpty(tallas[i]))
+                        {
+                            try
+                            {
+                                var tallasDict = JsonSerializer.Deserialize<Dictionary<string, int>>(tallas[i]);
+                                if (tallasDict != null)
+                                {
+                                    foreach (var talla in tallasDict)
+                                    {
+                                        if (talla.Value > 0)
+                                        {
+                                            _context.TallasInventario.Add(new TallaInventario
+                                            {
+                                                InventarioId = inventario.Id,
+                                                Talla = talla.Key,
+                                                Cantidad = talla.Value
+                                            });
+                                        }
+                                    }
+                                    await _context.SaveChangesAsync();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error deserializando tallas para producto {Producto}", inventario.Nombre);
+                            }
+                        }
+                    }
+                }
+
+                TempData["SuccessMessage"] = "Productos cargados correctamente";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["ErrorMessage"] = "No se recibieron productos válidos";
+            return View();
+        }
+
+
     }
 }
