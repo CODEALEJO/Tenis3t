@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using Tenis3t.Models.DTOs;
+using Tenis3t.Migrations;
 
 namespace Tenis3t.Controllers
 {
@@ -32,6 +33,7 @@ namespace Tenis3t.Controllers
         public async Task<IActionResult> Index(string filtro = "todos")
         {
             var currentUser = await _userManager.GetUserAsync(User);
+
             var query = _context.Prestamos
                 .Include(p => p.TallaInventario)
                     .ThenInclude(ti => ti.Inventario)
@@ -53,16 +55,26 @@ namespace Tenis3t.Controllers
                     break;
                 case "todos":
                 default:
-                    // Mostrar tanto los realizados como los recibidos
                     query = query.Where(p => p.UsuarioPrestamistaId == currentUser.Id ||
-                                           p.UsuarioReceptorId == currentUser.Id);
+                                             p.UsuarioReceptorId == currentUser.Id);
                     break;
             }
 
-            var prestamos = await query.OrderByDescending(p => p.FechaPrestamo).ToListAsync();
+            // Traer datos
+            var prestamos = await query.ToListAsync();
+
+            // Ordenar en memoria: primero Prestado, luego Vendido, luego otros,
+            // y dentro de cada grupo por nombre alfabético
+            prestamos = prestamos
+                .OrderBy(p => p.Estado?.Trim().ToLower() == "prestado" ? 0 :
+                              p.Estado?.Trim().ToLower() == "vendido" ? 1 : 2)
+                .ThenBy(p => p.TallaInventario.Inventario.Nombre)
+                .ToList();
+
             ViewBag.FiltroSeleccionado = filtro;
             return View(prestamos);
         }
+
 
         // GET: Prestamo/Create
         public async Task<IActionResult> Create()
