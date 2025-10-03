@@ -57,6 +57,7 @@ namespace Tenis3t.Controllers
             {
                 resultados.EnInventario.Add(new ResultadoInventario
                 {
+                    NombreProducto = inventario.Nombre, // ✅ Agregado
                     Usuario = inventario.Usuario.UserName,
                     CantidadTotal = inventario.Cantidad,
                     PrecioVenta = inventario.PrecioVenta,
@@ -82,6 +83,7 @@ namespace Tenis3t.Controllers
             {
                 resultados.EnExhibicion.Add(new ResultadoExhibicion
                 {
+                    NombreProducto = exhibicion.TallaInventario.Inventario.Nombre, // ✅ Agregado
                     Cliente = exhibicion.UsuarioReceptor.UserName,
                     Cantidad = exhibicion.Cantidad,
                     Talla = exhibicion.TallaInventario.Talla,

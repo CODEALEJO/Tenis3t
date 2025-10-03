@@ -12,6 +12,7 @@ namespace Tenis3t.Models
 
     public class ResultadoInventario
     {
+        public string NombreProducto { get; set; }  // ✅ Nuevo campo
         public string Usuario { get; set; }
         public int CantidadTotal { get; set; }
         public List<TallaCantidad> Tallas { get; set; }
@@ -20,6 +21,7 @@ namespace Tenis3t.Models
 
     public class ResultadoExhibicion
     {
+        public string NombreProducto { get; set; }  // ✅ Nuevo campo
         public string Cliente { get; set; }
         public int Cantidad { get; set; }
         public string Talla { get; set; }
