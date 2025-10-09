@@ -7,6 +7,16 @@
 <div class="container mt-4" style="max-width: 600px;">
     <h3 class="mb-4 text-center">Registrar Salida</h3>
 
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
     <form asp-action="Crear" method="post">
         <input type="hidden" name="inventarioId" value="@Model.Id" />
 
@@ -19,10 +29,10 @@
             <label for="tallaId" class="form-label">Seleccionar Talla:</label>
             <select name="tallaId" id="tallaId" class="form-select" required>
                 <option value="">Seleccione una talla</option>
-             @foreach (var talla in (List<Tenis3t.Models.TallaSelectViewModel>)ViewBag.Tallas)
-{
-    <option value="@talla.Id">@talla.Texto</option>
-}
+                @foreach (var talla in (List<Tenis3t.Models.TallaSelectViewModel>)ViewBag.Tallas)
+                {
+                    <option value="@talla.Id">@talla.Texto</option>
+                }
             </select>
         </div>
 
@@ -33,11 +43,12 @@
 
         <div class="mb-3">
             <label for="nota" class="form-label">Motivo / Nota:</label>
-            <textarea name="nota" id="nota" class="form-control" rows="3" placeholder="Ej: Daño, pérdida, prueba, etc."></textarea>
+            <textarea name="nota" id="nota" class="form-control" rows="3"
+                placeholder="Ej: Daño, pérdida, prueba, etc."></textarea>
         </div>
 
         <div class="d-flex justify-content-between">
-            <a asp-action="Index" asp-controller="Inventario" class="btn btn-secondary">Volver</a>
+            <a asp-action="Index" asp-controller="Inventario" class="btn btn-danger">Volver</a>
             <button type="submit" class="btn btn-primary">Registrar Salida</button>
         </div>
     </form>

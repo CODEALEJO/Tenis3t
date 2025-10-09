@@ -51,12 +51,42 @@ namespace Tenis3t.Controllers
                 .Include(t => t.Inventario)
                 .FirstOrDefaultAsync(t => t.Id == tallaId && t.Inventario.UsuarioId == usuario.Id);
 
-            if (talla == null || talla.Cantidad < cantidad)
+            if (talla == null)
             {
-                TempData["ErrorMessage"] = "Cantidad inválida o sin stock suficiente.";
+                TempData["ErrorMessage"] = "Talla no encontrada.";
                 return RedirectToAction("Index", "Inventario");
             }
 
+            if (cantidad <= 0)
+            {
+                ModelState.AddModelError("cantidad", "La cantidad debe ser mayor a 0.");
+            }
+
+            if (talla.Cantidad < cantidad)
+            {
+                ModelState.AddModelError("cantidad", $"Cantidad disponible de esa talla: {talla.Cantidad}. No puede superar el stock.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Volvemos a cargar las tallas para la vista
+                var inventario = await _context.Inventarios
+                    .Include(i => i.Tallas)
+                    .FirstOrDefaultAsync(i => i.Id == inventarioId && i.UsuarioId == usuario.Id);
+
+                ViewBag.Tallas = inventario.Tallas
+                    .Where(t => t.Cantidad > 0)
+                    .Select(t => new TallaSelectViewModel
+                    {
+                        Id = t.Id,
+                        Texto = $"Talla {t.Talla} ({t.Cantidad} disponibles)"
+                    })
+                    .ToList();
+
+                return View(inventario); // <- Regresa a la misma vista con los errores
+            }
+
+            // ✅ Si pasa la validación
             talla.Cantidad -= cantidad;
 
             var salida = new Salida
@@ -73,6 +103,7 @@ namespace Tenis3t.Controllers
             TempData["SuccessMessage"] = "Salida registrada correctamente.";
             return RedirectToAction("Index", "Inventario");
         }
+
 
     }
 }
