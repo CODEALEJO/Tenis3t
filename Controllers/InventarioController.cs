@@ -269,6 +269,22 @@ namespace Tenis3t.Controllers
             ModelState.Remove("Usuario");
             ModelState.Remove("UsuarioId");
             ModelState.Remove("Tallas");
+            ModelState.Remove("Salidas");
+
+
+            _logger.LogInformation($"📥 Entró a Edit POST. Id: {id}, ModelState válido: {ModelState.IsValid}");
+
+            // 🔍 Registrar todos los errores si el ModelState es inválido
+            if (!ModelState.IsValid)
+            {
+                foreach (var kvp in ModelState)
+                {
+                    foreach (var error in kvp.Value.Errors)
+                    {
+                        _logger.LogError($"❌ Error en campo {kvp.Key}: {error.ErrorMessage}");
+                    }
+                }
+            }
 
             if (ModelState.IsValid)
             {
@@ -288,7 +304,7 @@ namespace Tenis3t.Controllers
                     inventarioExistente.Nombre = inventario.Nombre;
                     inventarioExistente.Genero = inventario.Genero;
 
-                    // ✅ Ahora siempre actualiza costo y precio
+                    // ✅ Siempre actualiza costo y precio
                     inventarioExistente.Costo = inventario.Costo;
                     inventarioExistente.PrecioVenta = inventario.PrecioVenta;
 
@@ -311,7 +327,6 @@ namespace Tenis3t.Controllers
                         // Actualizar o agregar tallas
                         foreach (var talla in tallas)
                         {
-                            // Validar que no sea nulo ni vacío
                             if (talla.Value >= 0)
                             {
                                 var tallaExistente = inventarioExistente.Tallas
@@ -332,7 +347,6 @@ namespace Tenis3t.Controllers
                                 }
                             }
                         }
-
                     }
 
                     await _context.SaveChangesAsync();
