@@ -32,7 +32,9 @@ namespace Tenis3t.Controllers
 
             var inventarios = _context.Inventarios
                 .Include(i => i.Tallas)
+                .Include(i => i.Salidas)
                 .Where(i => i.UsuarioId == usuarioActual.Id);
+
 
             // Aplicar filtro por nombre si existe
             if (!string.IsNullOrEmpty(nombre))

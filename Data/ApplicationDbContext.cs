@@ -20,6 +20,7 @@ namespace Tenis3t.Data
         public DbSet<MetodoPago> MetodoPagos { get; set; }
         public DbSet<Pago> Pagos { get; set; }
         public DbSet<Cliente> Clientes { get; set; }
+        public DbSet<Salida> Salidas { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -87,7 +88,7 @@ namespace Tenis3t.Data
                 new MetodoPago { Id = 2, Nombre = "Crédito" },
                 new MetodoPago { Id = 3, Nombre = "Transferencia" }
             );
-            
+
             // Cambiar nombre de tabla para TallaInventario
             modelBuilder.Entity<TallaInventario>().ToTable("TallasInventario");
             modelBuilder.Entity<DetalleVenta>().ToTable("DetallesVenta");

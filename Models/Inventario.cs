@@ -32,6 +32,8 @@ namespace Tenis3t.Models
         public string UsuarioId { get; set; }
         [ForeignKey("UsuarioId")]
         public IdentityUser Usuario { get; set; }
+        public ICollection<Salida> Salidas { get; set; }
+
 
         // Relación con las tallas
         public List<TallaInventario> Tallas { get; set; } = new List<TallaInventario>();
