@@ -8,23 +8,24 @@
 
     <form asp-action="Create" method="post">
         @Html.AntiForgeryToken()
-        
+
         <div class="form-group">
             <label>Usuario Receptor</label>
-            <select asp-for="UsuarioReceptorId" class="form-control" 
-                    asp-items="@(new SelectList(ViewBag.Usuarios, "Id", "UserName"))">
+            <select asp-for="UsuarioReceptorId" class="form-control"
+                asp-items="@(new SelectList(ViewBag.Usuarios, "Id", "UserName"))">
                 <option value="">Seleccione un usuario</option>
             </select>
             <span asp-validation-for="UsuarioReceptorId" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
+        <div class="form-group position-relative">
             <label>Producto</label>
-            <select id="productoSelect" class="form-control" 
-                    asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))">
-                <option value="">Seleccione un producto</option>
-            </select>
+            <input type="text" id="productoInput" class="form-control" placeholder="Escriba el nombre del producto..."
+                autocomplete="off" />
+            <input type="hidden" id="productoId" /> <!-- para guardar el id real -->
+            <div id="sugerencias" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
         </div>
+
 
         <div class="form-group">
             <label>Talla</label>
@@ -44,22 +45,29 @@
             <button type="submit" class="btn btn-primary">Crear Préstamo</button>
             <a asp-action="Index" class="btn btn-danger">Cancelar</a>
         </div>
-        
+
     </form>
 </div>
 
 @section Scripts {
     <script>
-        $(function() {
+
+        let typingTimer;
+        $('#productoInput').on('input', function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => buscarProductos(), 250); // 250ms de espera
+        });
+
+        $(function () {
             // Cargar tallas al seleccionar producto
-            $('#productoSelect').change(function() {
+            $('#productoSelect').change(function () {
                 var productoId = $(this).val();
                 $('#tallaSelect').empty().append('<option value="">Cargando...</option>');
-                
+
                 if (productoId) {
-                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId }, function(data) {
+                    $.get('/Prestamo/GetTallasByProducto', { productoId: productoId }, function (data) {
                         $('#tallaSelect').empty().append('<option value="">Seleccione talla</option>');
-                        $.each(data, function(i, item) {
+                        $.each(data, function (i, item) {
                             $('#tallaSelect').append(`<option value="${item.id}">${item.talla} (${item.cantidad})</option>`);
                         });
                         $('#tallaSelect').prop('disabled', false);
@@ -70,15 +78,76 @@
             });
 
             // Mostrar cantidad disponible
-            $('#tallaSelect').change(function() {
+            $('#tallaSelect').change(function () {
                 var tallaId = $(this).val();
                 if (tallaId) {
-                    $.get('/Prestamo/GetCantidadDisponible', { tallaInventarioId: tallaId }, function(data) {
+                    $.get('/Prestamo/GetCantidadDisponible', { tallaInventarioId: tallaId }, function (data) {
                         $('#cantidadDisponible').text(`Disponibles: ${data.cantidad}`);
                         $('#cantidadInput').attr('max', data.cantidad);
                     });
                 }
             });
         });
+
+        $(function () {
+
+            let currentRequest = null; // guarda la última petición activa
+
+            $('#productoInput').on('input', function () {
+                var query = $(this).val();
+                $('#sugerencias').empty();
+
+                if (query.length >= 2) {
+
+                    // 🔥 Si hay una petición anterior, se cancela antes de iniciar la nueva
+                    if (currentRequest) {
+                        currentRequest.abort();
+                    }
+
+                    currentRequest = $.get('/Prestamo/BuscarProductos', { termino: query }, function (data) {
+                        $('#sugerencias').empty(); // limpiar nuevamente por si el usuario siguió escribiendo
+
+                        if (data.length > 0) {
+                            $.each(data, function (i, item) {
+                                $('#sugerencias').append(`
+                                    <a href="#" class="list-group-item list-group-item-action"
+                                       data-id="${item.id}" data-nombre="${item.nombre}">
+                                       ${item.nombre}
+                                    </a>
+                                `);
+                            });
+                        } else {
+                            $('#sugerencias').append('<div class="list-group-item text-muted">No se encontraron productos</div>');
+                        }
+
+                    }).always(function () {
+                        currentRequest = null; // liberar referencia cuando termina
+                    });
+                }
+            });
+
+            // --- SELECCIONAR PRODUCTO ---
+            $('#sugerencias').on('click', 'a', function (e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+                var nombre = $(this).data('nombre');
+
+                $('#productoInput').val(nombre);
+                $('#productoId').val(id);
+                $('#sugerencias').empty();
+
+                // Cargar tallas del producto seleccionado
+                $('#tallaSelect').empty().append('<option value="">Cargando...</option>');
+                $.get('/Prestamo/GetTallasByProducto', { productoId: id }, function (data) {
+                    $('#tallaSelect').empty().append('<option value="">Seleccione talla</option>');
+                    $.each(data, function (i, item) {
+                        $('#tallaSelect').append(`<option value="${item.id}">${item.talla} (${item.cantidad})</option>`);
+                    });
+                    $('#tallaSelect').prop('disabled', false);
+                });
+            });
+
+        });
+
     </script>
 }

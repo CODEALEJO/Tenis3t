@@ -243,6 +243,30 @@ namespace Tenis3t.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> BuscarProductos(string termino)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+                return Unauthorized();
+
+            var productos = await _context.Inventarios
+                .Where(i => i.UsuarioId == currentUser.Id &&
+                            i.Nombre.Contains(termino) &&
+                            i.Tallas.Any(t => t.Cantidad > 0)) // solo productos con stock
+                .OrderBy(i => i.Nombre)
+                .Select(i => new
+                {
+                    id = i.Id,
+                    nombre = i.Nombre
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Json(productos);
+        }
+
+
         // Método privado para loggear errores de validación
         private void LogearErroresValidacion()
         {
