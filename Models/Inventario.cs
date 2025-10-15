@@ -34,6 +34,9 @@ namespace Tenis3t.Models
         public IdentityUser Usuario { get; set; }
         public ICollection<Salida> Salidas { get; set; }
 
+        public string LoteIngreso { get; set; } = Guid.NewGuid().ToString();
+        public DateTime FechaIngreso { get; set; } = DateTime.Now;
+
 
         // Relación con las tallas
         public List<TallaInventario> Tallas { get; set; } = new List<TallaInventario>();

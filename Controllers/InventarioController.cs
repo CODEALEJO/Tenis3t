@@ -499,6 +499,7 @@ namespace Tenis3t.Controllers
         public async Task<IActionResult> CreateMultiple(List<Inventario> inventarios, List<string> tallas)
         {
             var usuarioActual = await _userManager.GetUserAsync(User);
+            var loteId = Guid.NewGuid().ToString();
 
             if (inventarios != null && inventarios.Count > 0)
             {
@@ -506,6 +507,8 @@ namespace Tenis3t.Controllers
                 {
                     var inventario = inventarios[i];
                     inventario.UsuarioId = usuarioActual.Id;
+                    inventario.LoteIngreso = loteId; // 🔹 Asigna el mismo lote a todos
+                    inventario.FechaIngreso = DateTime.Now;
 
                     ModelState.Remove("Usuario");
                     ModelState.Remove("UsuarioId");
@@ -616,6 +619,37 @@ namespace Tenis3t.Controllers
             TempData["ErrorMessage"] = "No se recibieron productos válidos";
             return View();
         }
+
+        public IActionResult HistorialIngreso()
+        {
+            var ingresos = _context.Inventarios
+                .Include(i => i.Tallas) // ← incluir tallas
+                .GroupBy(i => i.LoteIngreso)
+                .Select(g => new IngresoViewModel
+                {
+                    LoteIngreso = g.Key, //agrupa 
+                    FechaIngreso = g.First().FechaIngreso, // toma la del primero
+                    CantidadProductos = g.Count(),
+                    Productos = g.Select(p => new ProductoViewModel
+                    {
+                        Nombre = p.Nombre,
+                        Genero = p.Genero,
+                        Costo = p.Costo,
+                        PrecioVenta = p.PrecioVenta,
+                        Tallas = p.Tallas.Select(t => new TallaViewModel
+                        {
+                            Talla = t.Talla,
+                            Cantidad = t.Cantidad
+                        }).ToList()
+                    }).ToList()
+                })
+                .OrderByDescending(i => i.FechaIngreso)
+                .ToList();
+
+            return View(ingresos);
+        }
+
+
 
     }
 }
