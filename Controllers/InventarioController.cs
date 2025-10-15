@@ -522,6 +522,10 @@ namespace Tenis3t.Controllers
 
                         if (existente != null)
                         {
+                            // 🔹 Asegurar que el producto quede dentro del mismo lote
+                            existente.LoteIngreso = loteId;
+                            existente.FechaIngreso = DateTime.Now;
+
                             // 🔹 Actualizar precios si cambiaron
                             if (existente.Costo != inventario.Costo)
                                 existente.Costo = inventario.Costo;
@@ -549,13 +553,11 @@ namespace Tenis3t.Controllers
 
                                                 if (tallaExistente != null)
                                                 {
-                                                    // Si ya existe esa talla -> sumar cantidad
                                                     tallaExistente.Cantidad += talla.Value;
                                                     _context.Update(tallaExistente);
                                                 }
                                                 else
                                                 {
-                                                    // Si no existe -> crear nueva talla
                                                     _context.TallasInventario.Add(new TallaInventario
                                                     {
                                                         InventarioId = existente.Id,
