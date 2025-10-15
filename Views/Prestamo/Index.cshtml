@@ -27,14 +27,32 @@
     <div class="mb-4">
         <div class="btn-group btn-group-sm mb-2" role="group">
             <a asp-action="Index" asp-route-filtro="todos"
-               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "todos" ? "active" : "")">Todos</a>
             <a asp-action="Index" asp-route-filtro="realizados"
-               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "realizados" ? "active" : "")">Realizados</a>
             <a asp-action="Index" asp-route-filtro="recibidos"
-               class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
+                class="btn btn-outline-primary @(ViewBag.FiltroSeleccionado == "recibidos" ? "active" : "")">Recibidos</a>
         </div>
         <a asp-action="Create" class="btn btn-success btn-sm float-end">Nuevo Préstamo</a>
     </div>
+
+@* busqueda por nombre *@
+
+    <form method="get" asp-action="Index" class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label for="nombre" class="form-label fw-semibold">Buscar por nombre:</label>
+            <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto"
+                value="@ViewBag.FiltroNombre" />
+        </div>
+
+        <!-- Mantener el filtro actual al hacer búsqueda -->
+        <input type="hidden" name="filtro" value="@ViewBag.FiltroSeleccionado" />
+
+        <div class="col-md-2 align-self-end">
+            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+        </div>
+    </form>
+
 
     <div class="list-group">
         @foreach (var item in Model)
@@ -43,8 +61,8 @@
                 <div class="d-flex justify-content-between">
                     <h6 class="mb-1">@item.TallaInventario.Inventario.Nombre (@item.TallaInventario.Talla)</h6>
                     <span class="badge @(item.Estado?.Trim().Equals("Prestado", StringComparison.OrdinalIgnoreCase) == true ? "bg-warning" 
-                                   : item.Estado?.Trim().Equals("Devuelto", StringComparison.OrdinalIgnoreCase) == true ? "bg-success" 
-                                   : "bg-secondary")">
+                                                                                       : item.Estado?.Trim().Equals("Devuelto", StringComparison.OrdinalIgnoreCase) == true ? "bg-success" 
+                                                                                       : "bg-secondary")">
                         @item.Estado
                     </span>
                 </div>

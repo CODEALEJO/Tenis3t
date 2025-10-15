@@ -30,7 +30,7 @@ namespace Tenis3t.Controllers
         }
 
         // GET: Prestamo
-        public async Task<IActionResult> Index(string filtro = "todos")
+        public async Task<IActionResult> Index(string filtro = "todos", string nombre = null)
         {
             var currentUser = await _userManager.GetUserAsync(User);
 
@@ -41,7 +41,7 @@ namespace Tenis3t.Controllers
                 .Include(p => p.UsuarioReceptor)
                 .AsQueryable();
 
-            // Aplicar filtros
+            // 🔹 Aplicar filtros por tipo de préstamo (como ya lo tienes)
             switch (filtro.ToLower())
             {
                 case "realizados":
@@ -60,18 +60,29 @@ namespace Tenis3t.Controllers
                     break;
             }
 
-            // Traer datos
+            // 🔍 Filtro por nombre del producto
+            if (!string.IsNullOrEmpty(nombre))
+            {
+                query = query.Where(p => p.TallaInventario != null &&
+                         p.TallaInventario.Inventario != null &&
+                         p.TallaInventario.Inventario.Nombre.ToLower().Contains(nombre.ToLower().Trim()));
+
+
+            }
+
+            // 🔹 Traer y ordenar resultados
             var prestamos = await query.ToListAsync();
 
-            // Ordenar en memoria: primero Prestado, luego Vendido, luego otros,
-            // y dentro de cada grupo por nombre alfabético
             prestamos = prestamos
                 .OrderBy(p => p.Estado?.Trim().ToLower() == "prestado" ? 0 :
                               p.Estado?.Trim().ToLower() == "vendido" ? 1 : 2)
                 .ThenBy(p => p.TallaInventario.Inventario.Nombre)
                 .ToList();
 
+            // 🔹 Mantener los valores en la vista
             ViewBag.FiltroSeleccionado = filtro;
+            ViewBag.FiltroNombre = nombre;
+
             return View(prestamos);
         }
 
