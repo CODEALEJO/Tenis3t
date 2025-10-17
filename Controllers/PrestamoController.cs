@@ -87,18 +87,16 @@ namespace Tenis3t.Controllers
         }
 
 
+
         // GET: Prestamo/Create
         public async Task<IActionResult> Create()
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
-            {
                 return RedirectToAction("Login", "Account");
-            }
 
             await CargarDatosParaCrear(currentUser);
 
-            // Verificar si hay productos disponibles
             var productos = ViewBag.Productos as List<ProductoSelectViewModel>;
             if (productos == null || !productos.Any())
             {
@@ -106,77 +104,69 @@ namespace Tenis3t.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var dto = new CrearPrestamoDto
-            {
-
-                Cantidad = 1
-            };
-
-            return View(dto);
+            return View(new List<CrearPrestamoDto> { new CrearPrestamoDto() });
         }
 
         // POST: Prestamo/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CrearPrestamoDto dto)
+        public async Task<IActionResult> Create(List<CrearPrestamoDto> prestamos)
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+                return RedirectToAction("Login", "Account");
 
-            if (!ModelState.IsValid)
+            if (prestamos == null || prestamos.Count == 0)
             {
+                TempData["ErrorMessage"] = "No se enviaron préstamos válidos.";
                 await CargarDatosParaCrear(currentUser);
-                return View(dto);
+                return View(prestamos);
             }
 
-            try
+            var usuarioReceptorId = prestamos.First().UsuarioReceptorId;
+            if (string.IsNullOrEmpty(usuarioReceptorId))
             {
-                // Validar disponibilidad
+                TempData["ErrorMessage"] = "Debes seleccionar un usuario receptor.";
+                await CargarDatosParaCrear(currentUser);
+                return View(prestamos);
+            }
+
+            foreach (var dto in prestamos)
+            {
+                if (dto.TallaInventarioId == 0 || dto.Cantidad <= 0)
+                    continue;
+
                 var talla = await _context.TallasInventario
                     .Include(t => t.Inventario)
                     .FirstOrDefaultAsync(t => t.Id == dto.TallaInventarioId);
 
                 if (talla == null || talla.Inventario.UsuarioId != currentUser.Id)
-                {
-                    ModelState.AddModelError("", "No tienes permiso para prestar este producto");
-                    await CargarDatosParaCrear(currentUser);
-                    return View(dto);
-                }
+                    continue;
 
                 if (talla.Cantidad < dto.Cantidad)
-                {
-                    ModelState.AddModelError("Cantidad", $"Solo hay {talla.Cantidad} unidades disponibles");
-                    await CargarDatosParaCrear(currentUser);
-                    return View(dto);
-                }
+                    continue;
 
-                // Crear préstamo
                 var prestamo = new Prestamo
                 {
                     UsuarioPrestamistaId = currentUser.Id,
-                    UsuarioReceptorId = dto.UsuarioReceptorId,
+                    UsuarioReceptorId = usuarioReceptorId,
                     TallaInventarioId = dto.TallaInventarioId,
                     Cantidad = dto.Cantidad,
-                    Estado = "Prestado"
+                    Estado = "Prestado",
+                    FechaPrestamo = DateTime.Now
                 };
 
-                // Actualizar inventario
                 talla.Cantidad -= dto.Cantidad;
 
                 _context.Add(prestamo);
                 _context.Update(talla);
-                await _context.SaveChangesAsync();
+            }
 
-                TempData["SuccessMessage"] = "Préstamo creado exitosamente";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear préstamo");
-                ModelState.AddModelError("", "Error al crear el préstamo");
-                await CargarDatosParaCrear(currentUser);
-                return View(dto);
-            }
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Préstamos registrados correctamente.";
+            return RedirectToAction(nameof(Index));
         }
+
 
 
 
