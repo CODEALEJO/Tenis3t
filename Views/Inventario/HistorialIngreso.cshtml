@@ -74,16 +74,29 @@
         </div>
     }
 </div>
-
 <script>
     function imprimirIngreso(lote) {
-        // Tomar el contenido de la tabla de ese lote
-        const contenido = document.querySelector(`#collapse-${lote} .accordion-body`).innerHTML;
+        // Obtener el contenido de la tabla de ese lote
+        const bodyElement = document.querySelector(`#collapse-${lote} .accordion-body`);
+        const contenido = bodyElement.querySelector("table").outerHTML;
 
-        // Recortar el ID largo para mostrar solo una parte representativa
+        // Calcular la suma total de costos (busca todos los valores dentro de las celdas <td> que contienen $)
+        const filas = bodyElement.querySelectorAll("tbody tr");
+        let totalCosto = 0;
+
+        filas.forEach(fila => {
+            const costoCelda = fila.querySelector("td:nth-child(3)"); // tercera columna = costo
+            if (costoCelda) {
+                const valorTexto = costoCelda.textContent.replace(/[^0-9.]/g, "");
+                const valor = parseFloat(valorTexto);
+                if (!isNaN(valor)) totalCosto += valor;
+            }
+        });
+
+        // Recortar ID largo del lote
         const loteDisplay = lote && lote.length >= 8 ? lote.substring(0, 8).toUpperCase() : lote;
 
-        // Obtener la fecha actual con formato legible
+        // Fecha legible
         const fechaActual = new Date().toLocaleString("es-CO", {
             day: "2-digit",
             month: "2-digit",
@@ -92,10 +105,10 @@
             minute: "2-digit"
         });
 
-        // Nombre del local (puedes personalizarlo fácilmente)
+        // Nombre del local o título
         const nombreLocal = "INGRESO INVENTARIO";
 
-        // Crear ventana nueva para impresión
+        // Crear ventana de impresión
         const ventana = window.open('', '_blank');
 
         ventana.document.write(`
@@ -151,6 +164,12 @@
                             margin-right: 4px;
                             font-size: 0.8rem;
                         }
+                        tfoot td {
+                            font-weight: bold;
+                            background-color: #f8f9fa;
+                            color: #4a148c;
+                            font-size: 1rem;
+                        }
                         footer {
                             margin-top: 40px;
                             text-align: right;
@@ -160,8 +179,8 @@
                             padding-top: 10px;
                         }
                         media print {
-                            button {
-                                display: none;
+                            button, .btn, .accordion-button {
+                                display: none !important;
                             }
                         }
                     </style>
@@ -178,8 +197,17 @@
 
                     ${contenido}
 
+                    <table class="table mt-3">
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end">TOTAL COSTO</td>
+                                <td class="fw-bold">$${totalCosto.toLocaleString("es-CO")}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
                     <footer>
-                        <p>NOTA: Revisar bien y cualquier novedad comunicarse con su superior</p>
+                        <p>NOTA: Revisar bien y cualquier novedad comunicarse con su superior.</p>
                     </footer>
                 </body>
             </html>

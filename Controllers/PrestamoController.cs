@@ -110,23 +110,22 @@ namespace Tenis3t.Controllers
         // POST: Prestamo/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(List<CrearPrestamoDto> prestamos)
+        public async Task<IActionResult> Create(List<CrearPrestamoDto> prestamos, string usuarioReceptorId)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
                 return RedirectToAction("Login", "Account");
 
-            if (prestamos == null || prestamos.Count == 0)
+            if (string.IsNullOrEmpty(usuarioReceptorId))
             {
-                TempData["ErrorMessage"] = "No se enviaron préstamos válidos.";
+                TempData["ErrorMessage"] = "Debes seleccionar un usuario receptor.";
                 await CargarDatosParaCrear(currentUser);
                 return View(prestamos);
             }
 
-            var usuarioReceptorId = prestamos.First().UsuarioReceptorId;
-            if (string.IsNullOrEmpty(usuarioReceptorId))
+            if (prestamos == null || prestamos.Count == 0)
             {
-                TempData["ErrorMessage"] = "Debes seleccionar un usuario receptor.";
+                TempData["ErrorMessage"] = "No se enviaron préstamos válidos.";
                 await CargarDatosParaCrear(currentUser);
                 return View(prestamos);
             }

@@ -15,23 +15,21 @@
         <div class="alert alert-success">@TempData["SuccessMessage"]</div>
     }
 
-    <form asp-action="CreateMultiple" method="post">
+    <form asp-action="Create" method="post">
         @Html.AntiForgeryToken()
 
-     @for (int i = 0; i < Model.Count; i++)
-{
-    <div class="form-group">
-        <label>Usuario Receptor</label>
-        <select asp-for="@Model[i].UsuarioReceptorId" class="form-control"
+        <!-- 🔹 Un solo usuario receptor -->
+        <div class="form-group mb-4">
+            <label>Usuario Receptor</label>
+            <select id="usuarioReceptorId" name="usuarioReceptorId" class="form-control"
                 asp-items="@(new SelectList(ViewBag.Usuarios, "Id", "UserName"))">
-            <option value="">Seleccione un usuario</option>
-        </select>
-    </div>
-}
+                <option value="">Seleccione un usuario</option>
+            </select>
+        </div>
 
         <div id="prestamosContainer"></div>
 
-        <div class="mb-3">
+        <div class="mb-3 mt-4">
             <button type="button" class="btn btn-outline-primary" onclick="agregarPrestamo()">
                 <i class="bi bi-plus-circle"></i> Agregar préstamo
             </button>
@@ -45,110 +43,110 @@
 </div>
 
 @section Scripts {
-<script>
-    let prestamoIndex = 0;
+    <script>
+        let prestamoIndex = 0;
 
-    function agregarPrestamo() {
-        const container = document.getElementById("prestamosContainer");
+        function agregarPrestamo() {
+            const container = document.getElementById("prestamosContainer");
 
-        const card = document.createElement("div");
-        card.classList.add("card", "mb-3", "p-3");
-        card.innerHTML = `
-            <h5>Préstamo #${prestamoIndex + 1}</h5>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label>Producto</label>
-                    <input type="text" class="form-control" id="productoInput-${prestamoIndex}" placeholder="Escriba producto..." autocomplete="off" />
-                    <input type="hidden" name="prestamos[${prestamoIndex}].ProductoId" id="productoId-${prestamoIndex}" />
-                    <div id="sugerencias-${prestamoIndex}" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+            const card = document.createElement("div");
+            card.classList.add("card", "mb-3", "p-3", "mt-5");
+            card.innerHTML = `
+                <h5>Préstamo #${prestamoIndex + 1}</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label>Producto</label>
+                        <input type="text" class="form-control" id="productoInput-${prestamoIndex}" placeholder="Escriba producto..." autocomplete="off" />
+                        <input type="hidden" name="prestamos[${prestamoIndex}].ProductoId" id="productoId-${prestamoIndex}" />
+                        <div id="sugerencias-${prestamoIndex}" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Talla</label>
+                        <select name="prestamos[${prestamoIndex}].TallaInventarioId" id="tallaSelect-${prestamoIndex}" class="form-select" disabled>
+                            <option value="">Seleccione talla</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label>Cantidad</label>
+                        <input type="number" class="form-control" name="prestamos[${prestamoIndex}].Cantidad" id="cantidadInput-${prestamoIndex}" min="1" />
+                        <small id="cantidadDisponible-${prestamoIndex}" class="text-muted"></small>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.card').remove()">Eliminar</button>
+                    </div>
                 </div>
+            `;
+            container.appendChild(card);
 
-                <div class="col-md-3">
-                    <label>Talla</label>
-                    <select name="prestamos[${prestamoIndex}].TallaInventarioId" id="tallaSelect-${prestamoIndex}" class="form-select" disabled>
-                        <option value="">Seleccione talla</option>
-                    </select>
-                </div>
+            configurarAutoComplete(prestamoIndex);
+            prestamoIndex++;
+        }
 
-                <div class="col-md-2">
-                    <label>Cantidad</label>
-                    <input type="number" class="form-control" name="prestamos[${prestamoIndex}].Cantidad" id="cantidadInput-${prestamoIndex}" min="1" />
-                    <small id="cantidadDisponible-${prestamoIndex}" class="text-muted"></small>
-                </div>
+        function configurarAutoComplete(index) {
+            let currentRequest = null;
 
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.card').remove()">Eliminar</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
+            $(`#productoInput-${index}`).on('input', function () {
+                var query = $(this).val();
+                var sugerenciasDiv = $(`#sugerencias-${index}`);
+                sugerenciasDiv.empty();
 
-        configurarAutoComplete(prestamoIndex);
-        prestamoIndex++;
-    }
+                if (query.length >= 2) {
+                    if (currentRequest) currentRequest.abort();
 
-    function configurarAutoComplete(index) {
-        let currentRequest = null;
+                    currentRequest = $.get('/Prestamo/BuscarProductos', { termino: query }, function (data) {
+                        sugerenciasDiv.empty();
 
-        $(`#productoInput-${index}`).on('input', function () {
-            var query = $(this).val();
-            var sugerenciasDiv = $(`#sugerencias-${index}`);
-            sugerenciasDiv.empty();
-
-            if (query.length >= 2) {
-                if (currentRequest) currentRequest.abort();
-
-                currentRequest = $.get('/Prestamo/BuscarProductos', { termino: query }, function (data) {
-                    sugerenciasDiv.empty();
-
-                    if (data.length > 0) {
-                        $.each(data, function (i, item) {
-                            sugerenciasDiv.append(`
-                                <a href="#" class="list-group-item list-group-item-action"
-                                   data-id="${item.id}" data-nombre="${item.nombre}">
-                                   ${item.nombre}
-                                </a>
-                            `);
-                        });
-                    } else {
-                        sugerenciasDiv.append('<div class="list-group-item text-muted">No se encontraron productos</div>');
-                    }
-                }).always(() => currentRequest = null);
-            }
-        });
-
-        $(`#sugerencias-${index}`).on('click', 'a', function (e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var nombre = $(this).data('nombre');
-
-            $(`#productoInput-${index}`).val(nombre);
-            $(`#productoId-${index}`).val(id);
-            $(`#sugerencias-${index}`).empty();
-
-            // Cargar tallas
-            var tallaSelect = $(`#tallaSelect-${index}`);
-            tallaSelect.empty().append('<option>Cargando...</option>');
-
-            $.get('/Prestamo/GetTallasByProducto', { productoId: id }, function (data) {
-                tallaSelect.empty().append('<option value="">Seleccione talla</option>');
-                $.each(data, function (i, item) {
-                    tallaSelect.append(`<option value="${item.id}">${item.talla} (${item.cantidad})</option>`);
-                });
-                tallaSelect.prop('disabled', false);
+                        if (data.length > 0) {
+                            $.each(data, function (i, item) {
+                                sugerenciasDiv.append(`
+                                    <a href="#" class="list-group-item list-group-item-action"
+                                       data-id="${item.id}" data-nombre="${item.nombre}">
+                                       ${item.nombre}
+                                    </a>
+                                `);
+                            });
+                        } else {
+                            sugerenciasDiv.append('<div class="list-group-item text-muted">No se encontraron productos</div>');
+                        }
+                    }).always(() => currentRequest = null);
+                }
             });
-        });
 
-        // Mostrar cantidad disponible
-        $(document).on('change', `#tallaSelect-${index}`, function () {
-            var tallaId = $(this).val();
-            if (tallaId) {
-                $.get('/Prestamo/GetCantidadDisponible', { tallaInventarioId: tallaId }, function (data) {
-                    $(`#cantidadDisponible-${index}`).text(`Disponibles: ${data.cantidad}`);
-                    $(`#cantidadInput-${index}`).attr('max', data.cantidad);
+            $(`#sugerencias-${index}`).on('click', 'a', function (e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+                var nombre = $(this).data('nombre');
+
+                $(`#productoInput-${index}`).val(nombre);
+                $(`#productoId-${index}`).val(id);
+                $(`#sugerencias-${index}`).empty();
+
+                // Cargar tallas
+                var tallaSelect = $(`#tallaSelect-${index}`);
+                tallaSelect.empty().append('<option>Cargando...</option>');
+
+                $.get('/Prestamo/GetTallasByProducto', { productoId: id }, function (data) {
+                    tallaSelect.empty().append('<option value="">Seleccione talla</option>');
+                    $.each(data, function (i, item) {
+                        tallaSelect.append(`<option value="${item.id}">${item.talla} (${item.cantidad})</option>`);
+                    });
+                    tallaSelect.prop('disabled', false);
                 });
-            }
-        });
-    }
-</script>
+            });
+
+            // Mostrar cantidad disponible
+            $(document).on('change', `#tallaSelect-${index}`, function () {
+                var tallaId = $(this).val();
+                if (tallaId) {
+                    $.get('/Prestamo/GetCantidadDisponible', { tallaInventarioId: tallaId }, function (data) {
+                        $(`#cantidadDisponible-${index}`).text(`Disponibles: ${data.cantidad}`);
+                        $(`#cantidadInput-${index}`).attr('max', data.cantidad);
+                    });
+                }
+            });
+        }
+    </script>
 }
