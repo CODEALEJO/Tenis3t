@@ -110,5 +110,15 @@
 
         hidden.value = JSON.stringify(tallasDict);
     }
+
+    document.querySelector("form").addEventListener("submit", function (e) {
+    // Recorre todos los inputs tipo number
+    this.querySelectorAll("input[type='number']").forEach(input => {
+        if (input.value) {
+            // Reemplaza comas por puntos antes de enviar
+            input.value = input.value.replace(",", ".");
+        }
+    });
+});
 </script>
 }

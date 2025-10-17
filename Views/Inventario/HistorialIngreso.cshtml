@@ -44,8 +44,8 @@
                                 <tr class="align-middle text-center">
                                     <td>@p.Nombre</td>
                                     <td>@(p.Genero?.ToLower() == "hombre" ? "Hombre" : "Dama")</td>
-                                    <td>$@p.Costo</td>
-                                    <td>$@p.PrecioVenta</td>
+                                    <td>$@p.CostoFormateado</td>
+                                    <td>$@p.PrecioVentaFormateado</td>
                                     <td>
                                         @if (p.Tallas != null && p.Tallas.Any())
                                         {
@@ -74,144 +74,90 @@
         </div>
     }
 </div>
+
 <script>
     function imprimirIngreso(lote) {
-        // Obtener el contenido de la tabla de ese lote
         const bodyElement = document.querySelector(`#collapse-${lote} .accordion-body`);
         const contenido = bodyElement.querySelector("table").outerHTML;
 
-        // Calcular la suma total de costos (busca todos los valores dentro de las celdas <td> que contienen $)
         const filas = bodyElement.querySelectorAll("tbody tr");
         let totalCosto = 0;
 
         filas.forEach(fila => {
-            const costoCelda = fila.querySelector("td:nth-child(3)"); // tercera columna = costo
-            if (costoCelda) {
-                const valorTexto = costoCelda.textContent.replace(/[^0-9.]/g, "");
-                const valor = parseFloat(valorTexto);
-                if (!isNaN(valor)) totalCosto += valor;
+            const costoCelda = fila.querySelector("td:nth-child(3)");
+            const tallasCelda = fila.querySelector("td:nth-child(5)");
+
+            let cantidadTotal = 0;
+            if (tallasCelda) {
+                const spans = tallasCelda.querySelectorAll("span");
+                spans.forEach(span => {
+                    const match = span.textContent.match(/:\s*(\d+)/);
+                    if (match) cantidadTotal += parseInt(match[1]);
+                });
             }
+
+            // ✅ Limpia los puntos de miles y convierte comas a punto decimal
+            let costoTexto = costoCelda ? costoCelda.textContent.trim() : "0";
+            costoTexto = costoTexto.replace(/[^\d,.-]/g, ""); // elimina símbolos
+            costoTexto = costoTexto.replace(/\./g, "").replace(",", "."); // quita puntos de miles
+            const costoUnitario = parseFloat(costoTexto) || 0;
+
+            totalCosto += cantidadTotal * costoUnitario;
         });
 
-        // Recortar ID largo del lote
         const loteDisplay = lote && lote.length >= 8 ? lote.substring(0, 8).toUpperCase() : lote;
-
-        // Fecha legible
         const fechaActual = new Date().toLocaleString("es-CO", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
+            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
         });
-
-        // Nombre del local o título
         const nombreLocal = "INGRESO INVENTARIO";
 
-        // Crear ventana de impresión
         const ventana = window.open('', '_blank');
-
         ventana.document.write(`
-            <html>
-                <head>
-                    <title>Ingreso de Lote ${loteDisplay}</title>
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-                    <style>
-                        body {
-                            font-family: 'Segoe UI', Arial, sans-serif;
-                            padding: 40px;
-                            color: #333;
-                        }
-                        header {
-                            text-align: center;
-                            margin-bottom: 30px;
-                            border-bottom: 2px solid #4a148c;
-                            padding-bottom: 10px;
-                        }
-                        h1 {
-                            font-size: 1.8rem;
-                            color: #4a148c;
-                            margin-bottom: 5px;
-                        }
-                        h2 {
-                            font-size: 1.2rem;
-                            color: #666;
-                            margin-bottom: 0;
-                        }
-                        .info {
-                            margin-top: 10px;
-                            text-align: center;
-                            font-size: 0.9rem;
-                            color: #555;
-                        }
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-top: 20px;
-                        }
-                        th, td {
-                            border: 1px solid #ddd;
-                            padding: 8px;
-                            text-align: center;
-                            font-size: 0.95rem;
-                        }
-                        th {
-                            background-color: #f3f0ff;
-                            color: #4a148c;
-                            font-weight: 600;
-                        }
-                        .badge {
-                            margin-right: 4px;
-                            font-size: 0.8rem;
-                        }
-                        tfoot td {
-                            font-weight: bold;
-                            background-color: #f8f9fa;
-                            color: #4a148c;
-                            font-size: 1rem;
-                        }
-                        footer {
-                            margin-top: 40px;
-                            text-align: right;
-                            font-size: 0.85rem;
-                            color: #666;
-                            border-top: 1px solid #ccc;
-                            padding-top: 10px;
-                        }
-                        media print {
-                            button, .btn, .accordion-button {
-                                display: none !important;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <header>
-                        <h1>${nombreLocal}</h1>
-                        <h2>Registro de Ingreso de Lote</h2>
-                        <div class="info">
-                            <strong>ID de Lote:</strong> ${loteDisplay} <br>
-                            <strong>Fecha de impresión:</strong> ${fechaActual}
-                        </div>
-                    </header>
+        <html>
+            <head>
+                <title>Ingreso de Lote ${loteDisplay}</title>
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
+                    header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #4a148c; padding-bottom: 10px; }
+                    h1 { font-size: 1.8rem; color: #4a148c; margin-bottom: 5px; }
+                    h2 { font-size: 1.2rem; color: #666; margin-bottom: 0; }
+                    .info { margin-top: 10px; text-align: center; font-size: 0.9rem; color: #555; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 0.95rem; }
+                    th { background-color: #f3f0ff; color: #4a148c; font-weight: 600; }
+                    .badge { margin-right: 4px; font-size: 0.8rem; }
+                    tfoot td { font-weight: bold; background-color: #f8f9fa; color: #4a148c; font-size: 1rem; }
+                    footer { margin-top: 40px; text-align: right; font-size: 0.85rem; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+                    media print { button, .btn, .accordion-button { display: none !important; } }
+                </style>
+            </head>
+            <body>
+                <header>
+                    <h1>${nombreLocal}</h1>
+                    <h2>Registro de Ingreso de Lote</h2>
+                    <div class="info">
+                        <strong>ID de Lote:</strong> ${loteDisplay} <br>
+                        <strong>Fecha de impresión:</strong> ${fechaActual}
+                    </div>
+                </header>
 
-                    ${contenido}
+                ${contenido}
 
-                    <table class="table mt-3">
-                        <tfoot>
-                            <tr>
-                                <td colspan="4" class="text-end">TOTAL COSTO</td>
-                                <td class="fw-bold">$${totalCosto.toLocaleString("es-CO")}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <table class="table mt-3">
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end">TOTAL COSTO</td>
+                            <td class="fw-bold">$${Math.round(totalCosto).toLocaleString("es-CO")}</td>
+                        </tr>
+                    </tfoot>
+                </table>
 
-                    <footer>
-                        <p>NOTA: Revisar bien y cualquier novedad comunicarse con su superior.</p>
-                    </footer>
-                </body>
-            </html>
-        `);
+                <footer>
+                    <p>NOTA: Revisar bien y cualquier novedad comunicarse con su superior.</p>
+                </footer>
+            </body>
+        </html>
+    `);
 
         ventana.document.close();
         ventana.print();

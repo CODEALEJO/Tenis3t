@@ -69,17 +69,6 @@
             </div>
         </div>
 
-        @* <div class="mb-3">
-            <label for="claveSeguridad" class="form-label">Clave de Seguridad</label>
-            <input type="password" name="claveSeguridad" class="form-control" required />
-            @if (ViewData.ModelState["claveSeguridad"]?.Errors?.Count > 0)
-            {
-                <span class="text-danger">@ViewData.ModelState["claveSeguridad"].Errors.First().ErrorMessage</span>
-            }
-        </div> *@
-
-
-
         <div class="mb-3">
             <button type="submit" class="btn btn-success">
                 <i class="bi bi-save"></i> Guardar Producto
@@ -176,5 +165,16 @@
                 }
             });
         });
+
+
+        document.querySelector("form").addEventListener("submit", function (e) {
+    // Recorre todos los inputs tipo number
+    this.querySelectorAll("input[type='number']").forEach(input => {
+        if (input.value) {
+            // Reemplaza comas por puntos antes de enviar
+            input.value = input.value.replace(",", ".");
+        }
+    });
+});
     </script>
 }
