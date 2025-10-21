@@ -3,6 +3,9 @@
 @{
     ViewData["Title"] = "Reporte de Exhibiciones";
     Layout = null; // No usar layout para impresión
+
+    // Filtrar solo los préstamos con estado "Prestado"
+    var exhibicionesPrestadas = Model.Where(p => p.Estado == "Prestado").ToList();
 }
 
 <!DOCTYPE html>
@@ -87,14 +90,14 @@
 </head>
 <body>
     <div class="header">
-        <h1>3T - Reporte de Exhibiciones</h1>
+        <h1>Reporte de Exhibiciones</h1>
         <h2>Local: @ViewBag.UsuarioReceptor</h2>
         <p>Fecha de impresión: @ViewBag.FechaImpresion</p>
     </div>
 
-    @if (!Model.Any())
+    @if (!exhibicionesPrestadas.Any())
     {
-        <p>No se encontraron exhibiciones para este local.</p>
+        <p>No se encontraron exhibiciones con estado "Prestado" para este local.</p>
     }
     else
     {
@@ -109,7 +112,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in exhibicionesPrestadas)
                 {
                     <tr>
                         <td>@item.TallaInventario.Inventario.Nombre</td>
@@ -121,7 +124,7 @@
                 }
                 <tr class="total-row">
                     <td colspan="2"><strong>Total</strong></td>
-                    <td><strong>@Model.Sum(p => p.Cantidad)</strong></td>
+                    <td><strong>@exhibicionesPrestadas.Sum(p => p.Cantidad)</strong></td>
                     <td colspan="2"></td>
                 </tr>
             </tbody>
