@@ -499,5 +499,25 @@ namespace Tenis3t.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarUsuarios(string termino)
+        {
+            if (string.IsNullOrWhiteSpace(termino))
+                return Json(new List<object>());
+
+            var usuarios = await _context.Users
+                .Where(u => u.UserName.Contains(termino))
+                .Select(u => new
+                {
+                    id = u.Id,
+                    userName = u.UserName
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Json(usuarios);
+        }
+
     }
 }

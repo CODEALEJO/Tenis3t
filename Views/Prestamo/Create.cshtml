@@ -19,13 +19,14 @@
         @Html.AntiForgeryToken()
 
         <!-- 🔹 Un solo usuario receptor -->
-        <div class="form-group mb-4">
+        <div class="form-group mb-4 position-relative">
             <label>Usuario Receptor</label>
-            <select id="usuarioReceptorId" name="usuarioReceptorId" class="form-control"
-                asp-items="@(new SelectList(ViewBag.Usuarios, "Id", "UserName"))">
-                <option value="">Seleccione un usuario</option>
-            </select>
+            <input type="text" id="usuarioReceptorInput" class="form-control"
+                placeholder="Escriba el nombre del usuario..." autocomplete="off" />
+            <input type="hidden" name="usuarioReceptorId" id="usuarioReceptorId" />
+            <div id="sugerenciasUsuarios" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
         </div>
+
 
         <div id="prestamosContainer"></div>
 
@@ -52,33 +53,33 @@
             const card = document.createElement("div");
             card.classList.add("card", "mb-3", "p-3", "mt-5");
             card.innerHTML = `
-                <h5>Préstamo #${prestamoIndex + 1}</h5>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label>Producto</label>
-                        <input type="text" class="form-control" id="productoInput-${prestamoIndex}" placeholder="Escriba producto..." autocomplete="off" />
-                        <input type="hidden" name="prestamos[${prestamoIndex}].ProductoId" id="productoId-${prestamoIndex}" />
-                        <div id="sugerencias-${prestamoIndex}" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-                    </div>
+                        <h5>Préstamo #${prestamoIndex + 1}</h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label>Producto</label>
+                                <input type="text" class="form-control" id="productoInput-${prestamoIndex}" placeholder="Escriba producto..." autocomplete="off" />
+                                <input type="hidden" name="prestamos[${prestamoIndex}].ProductoId" id="productoId-${prestamoIndex}" />
+                                <div id="sugerencias-${prestamoIndex}" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+                            </div>
 
-                    <div class="col-md-3">
-                        <label>Talla</label>
-                        <select name="prestamos[${prestamoIndex}].TallaInventarioId" id="tallaSelect-${prestamoIndex}" class="form-select" disabled>
-                            <option value="">Seleccione talla</option>
-                        </select>
-                    </div>
+                            <div class="col-md-3">
+                                <label>Talla</label>
+                                <select name="prestamos[${prestamoIndex}].TallaInventarioId" id="tallaSelect-${prestamoIndex}" class="form-select" disabled>
+                                    <option value="">Seleccione talla</option>
+                                </select>
+                            </div>
 
-                    <div class="col-md-2">
-                        <label>Cantidad</label>
-                        <input type="number" class="form-control" name="prestamos[${prestamoIndex}].Cantidad" id="cantidadInput-${prestamoIndex}" min="1" />
-                        <small id="cantidadDisponible-${prestamoIndex}" class="text-muted"></small>
-                    </div>
+                            <div class="col-md-2">
+                                <label>Cantidad</label>
+                                <input type="number" class="form-control" name="prestamos[${prestamoIndex}].Cantidad" id="cantidadInput-${prestamoIndex}" min="1" />
+                                <small id="cantidadDisponible-${prestamoIndex}" class="text-muted"></small>
+                            </div>
 
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.card').remove()">Eliminar</button>
-                    </div>
-                </div>
-            `;
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.card').remove()">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
             container.appendChild(card);
 
             configurarAutoComplete(prestamoIndex);
@@ -102,11 +103,11 @@
                         if (data.length > 0) {
                             $.each(data, function (i, item) {
                                 sugerenciasDiv.append(`
-                                    <a href="#" class="list-group-item list-group-item-action"
-                                       data-id="${item.id}" data-nombre="${item.nombre}">
-                                       ${item.nombre}
-                                    </a>
-                                `);
+                                            <a href="#" class="list-group-item list-group-item-action"
+                                               data-id="${item.id}" data-nombre="${item.nombre}">
+                                               ${item.nombre}
+                                            </a>
+                                        `);
                             });
                         } else {
                             sugerenciasDiv.append('<div class="list-group-item text-muted">No se encontraron productos</div>');
@@ -148,5 +149,47 @@
                 }
             });
         }
+
+        $(document).ready(function () {
+            let currentUserRequest = null;
+
+            $('#usuarioReceptorInput').on('input', function () {
+                var query = $(this).val();
+                var sugerenciasDiv = $('#sugerenciasUsuarios');
+                sugerenciasDiv.empty();
+
+                if (query.length >= 2) {
+                    if (currentUserRequest) currentUserRequest.abort();
+
+                    currentUserRequest = $.get('/Prestamo/BuscarUsuarios', { termino: query }, function (data) {
+                        sugerenciasDiv.empty();
+
+                        if (data.length > 0) {
+                            $.each(data, function (i, item) {
+                                sugerenciasDiv.append(`
+                                <a href="#" class="list-group-item list-group-item-action"
+                                   data-id="${item.id}" data-nombre="${item.userName}">
+                                   ${item.userName}
+                                </a>
+                            `);
+                            });
+                        } else {
+                            sugerenciasDiv.append('<div class="list-group-item text-muted">No se encontraron usuarios</div>');
+                        }
+                    }).always(() => currentUserRequest = null);
+                }
+            });
+
+            $('#sugerenciasUsuarios').on('click', 'a', function (e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+                var nombre = $(this).data('nombre');
+
+                $('#usuarioReceptorInput').val(nombre);
+                $('#usuarioReceptorId').val(id);
+                $('#sugerenciasUsuarios').empty();
+            });
+        });
+
     </script>
 }
