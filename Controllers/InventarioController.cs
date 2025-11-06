@@ -622,15 +622,22 @@ namespace Tenis3t.Controllers
             return View();
         }
 
-        public IActionResult HistorialIngreso()
+        public async Task<IActionResult> HistorialIngreso()
         {
+            var usuarioActual = await _userManager.GetUserAsync(User);
+            if (usuarioActual == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             var ingresos = _context.Inventarios
-                .Include(i => i.Tallas) // ← incluir tallas
+                .Include(i => i.Tallas)
+                .Where(i => i.UsuarioId == usuarioActual.Id) // 👈 FILTRA POR USUARIO ACTUAL
                 .GroupBy(i => i.LoteIngreso)
                 .Select(g => new IngresoViewModel
                 {
-                    LoteIngreso = g.Key, //agrupa 
-                    FechaIngreso = g.First().FechaIngreso, // toma la del primero
+                    LoteIngreso = g.Key,
+                    FechaIngreso = g.First().FechaIngreso,
                     CantidadProductos = g.Count(),
                     Productos = g.Select(p => new ProductoViewModel
                     {
@@ -650,7 +657,6 @@ namespace Tenis3t.Controllers
 
             return View(ingresos);
         }
-
 
 
     }
