@@ -12,7 +12,7 @@ using Tenis3t.Migrations;
 
 namespace Tenis3t.Controllers
 {
-    [Authorize]
+
     public class PrestamoController : Controller
     {
         private readonly ApplicationDbContext _context;

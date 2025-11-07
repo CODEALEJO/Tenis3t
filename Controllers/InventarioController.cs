@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace Tenis3t.Controllers
 {
-    [Authorize]
+  
     public class InventarioController : Controller
     {
         private readonly ApplicationDbContext _context;

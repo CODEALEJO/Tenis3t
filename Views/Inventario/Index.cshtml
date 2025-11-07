@@ -62,11 +62,12 @@
                         <i class="bi bi-search"></i>
                     </button>
 
-                    <!-- Botones de acción -->
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <button type="button" class="btn btn-success"
+                        onclick="location.href='@Url.Action("Create", "Inventario")'">
                         <i class="bi bi-plus-circle"></i>
                         <span class="ms-1 d-none d-xl-inline">Nuevo</span>
                     </button>
+
 
                     <button type="button" class="btn btn-warning"
                         onclick="location.href='@Url.Action("CreateMultiple", "Inventario")'">
@@ -85,32 +86,6 @@
         </div>
     </div>
 
-
-    <!-- Modal para crear nuevo producto -->
-    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="createModalLabel">Nuevo Producto</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <form id="createForm" method="post" asp-action="Create">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="claveSeguridadCreate" class="form-label">Clave de Seguridad</label>
-                            <input type="password" class="form-control clave-seguridad" id="claveSeguridadCreate"
-                                name="claveSeguridad" required />
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <button type="submit" class="btn btn-success">Continuar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Listado de productos -->
     <div class="accordion mx-auto" id="inventarioAccordion" style="max-width: 1200px;">
@@ -197,28 +172,33 @@
 
 
                         <div class="d-flex justify-content-end mt-3">
-                            <!-- Botón de Editar con modal -->
-                            <button type="button" class="btn btn-warning btn-sm me-2" data-bs-toggle="modal"
-                                data-bs-target="#editModal-@inventario.Id">
+
+                            <!-- Botón EDITAR → va al controlador Inventario/Edit -->
+                            <a asp-controller="Inventario" asp-action="Edit" asp-route-id="@inventario.Id"
+                                class="btn btn-warning btn-sm me-2">
                                 <i class="bi bi-pencil"></i> Editar
-                            </button>
+                            </a>
 
-                            <!-- Botón de Eliminar con modal -->
-                            <button type="button" class="btn btn-danger btn-sm me-2" data-bs-toggle="modal"
-                                data-bs-target="#deleteModal-@inventario.Id">
+                            <!-- Botón ELIMINAR → va al controlador Inventario/Delete -->
+                            <a asp-controller="Inventario" asp-action="Delete" asp-route-id="@inventario.Id"
+                                class="btn btn-danger btn-sm me-2">
                                 <i class="bi bi-trash"></i> Eliminar
-                            </button>
+                            </a>
 
+                            <!-- Botón IMPRIMIR (ya estaba bien) -->
                             <a asp-action="Imprimir" asp-route-id="@inventario.Id" target="_blank"
                                 class="btn btn-primary btn-sm me-2">
                                 <i class="bi bi-receipt-cutoff"></i> Imprimir
                             </a>
 
+                            <!-- Botón SALIDA (ya estaba bien) -->
                             <a asp-controller="Salidas" asp-action="Crear" asp-route-id="@inventario.Id"
                                 class="btn btn-info btn-sm me-2">
                                 <i class="bi bi-box-arrow-up"></i> Salida
                             </a>
+
                         </div>
+
                     </div>
                 </div>
             </div>

@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace Tenis3t.Controllers
 {
-    [Authorize]
+
     public class VentasController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -526,95 +526,6 @@ namespace Tenis3t.Controllers
 
             return View("MetodosPago", model);
         }
-        // private async Task<IActionResult> ProcesarVenta(VentaViewModel model, List<MetodoPagoViewModel> metodosPago, string usuarioId)
-        // {
-        //     decimal totalVenta = model.Detalles.Sum(d => d.PrecioUnitario * d.Cantidad);
-
-        //     var executionStrategy = _context.Database.CreateExecutionStrategy();
-
-        //     return await executionStrategy.ExecuteAsync(async () =>
-        //     {
-        //         using (var transaction = await _context.Database.BeginTransactionAsync())
-        //         {
-        //             try
-        //             {
-        //                 Cliente? cliente = null;
-        //                 if (!string.IsNullOrEmpty(model.NombreCliente))
-        //                 {
-        //                     cliente = new Cliente
-        //                     {
-        //                         Nombre = model.NombreCliente,
-        //                         Cedula = model.CedulaCliente,
-        //                         Telefono = model.TelefonoCliente,
-        //                         Email = model.EmailCliente,
-        //                     };
-        //                     _context.Add(cliente);
-        //                     await _context.SaveChangesAsync();
-        //                 }
-
-        //                 var venta = new Venta
-        //                 {
-        //                     FechaVenta = DateTime.Now,
-        //                     Estado = "Completada",
-        //                     UsuarioVendedorId = usuarioId,
-        //                     ClienteId = cliente?.Id,
-        //                     Total = totalVenta
-        //                 };
-        //                 _context.Add(venta);
-        //                 await _context.SaveChangesAsync();
-
-        //                 foreach (var detalle in model.Detalles)
-        //                 {
-        //                     var tallaInventario = await _context.TallasInventario
-        //                         .Include(t => t.Inventario)
-        //                         .FirstOrDefaultAsync(t => t.Id == detalle.TallaInventarioId);
-
-        //                     if (tallaInventario == null || tallaInventario.Cantidad < detalle.Cantidad)
-        //                     {
-        //                         throw new Exception($"Error en el inventario para la talla ID: {detalle.TallaInventarioId}");
-        //                     }
-
-        //                     var detalleVenta = new DetalleVenta
-        //                     {
-        //                         VentaId = venta.Id,
-        //                         TallaInventarioId = detalle.TallaInventarioId,
-        //                         Cantidad = detalle.Cantidad,
-        //                         PrecioUnitario = detalle.PrecioUnitario
-        //                     };
-
-        //                     tallaInventario.Cantidad -= detalle.Cantidad;
-        //                     _context.Add(detalleVenta);
-        //                     _context.Update(tallaInventario);
-        //                 }
-
-        //                 foreach (var metodoPago in metodosPago)
-        //                 {
-        //                     var pago = new Pago
-        //                     {
-        //                         VentaId = venta.Id,
-        //                         MetodoPagoId = metodoPago.MetodoPagoId,
-        //                         Monto = metodoPago.Monto
-        //                     };
-        //                     _context.Add(pago);
-        //                 }
-
-        //                 await _context.SaveChangesAsync();
-        //                 await transaction.CommitAsync();
-
-        //                 HttpContext.Session.Remove("VentaViewModel");
-        //                 TempData["SuccessMessage"] = "Venta registrada exitosamente";
-        //                 return RedirectToAction(nameof(Index));
-        //             }
-        //             catch (Exception ex)
-        //             {
-        //                 await transaction.RollbackAsync();
-        //                 _logger.LogError(ex, "Error al procesar venta");
-        //                 TempData["ErrorMessage"] = $"Error al procesar la venta: {ex.Message}";
-        //                 return CargarViewBagYRetornarVista(model);
-        //             }
-        //         }
-        //     });
-        // }
 
         // GET: Ventas/Details/5
         public async Task<IActionResult> Details(int? id)

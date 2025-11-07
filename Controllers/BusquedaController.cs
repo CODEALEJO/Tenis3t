@@ -10,8 +10,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Tenis3t.Controllers
 {
-    [Authorize]
-    public class BusquedaController : Controller
+        public class BusquedaController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
