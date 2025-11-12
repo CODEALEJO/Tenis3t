@@ -83,6 +83,29 @@ namespace Tenis3t.Controllers
             ViewBag.FiltroSeleccionado = filtro;
             ViewBag.FiltroNombre = nombre;
 
+            // 🔹 Convertir fechas UTC a hora de Colombia antes de mostrar
+            var colombiaZone = TimeZoneInfo.FindSystemTimeZoneById("America/Bogota");
+
+           
+
+foreach (var p in prestamos)
+{
+    // Si usas DateTime no-nullable, evita convertir fechas vacías (DateTime.MinValue).
+    if (p.FechaPrestamo != DateTime.MinValue)
+    {
+        var fechaPrestamoUtc = DateTime.SpecifyKind(p.FechaPrestamo, DateTimeKind.Utc);
+        p.FechaPrestamo = TimeZoneInfo.ConvertTimeFromUtc(fechaPrestamoUtc, colombiaZone);
+    }
+
+   if (p.FechaDevolucion.HasValue)
+    {
+        var fechaDevolucionUtc = DateTime.SpecifyKind(p.FechaDevolucion.Value, DateTimeKind.Utc);
+        p.FechaDevolucion = TimeZoneInfo.ConvertTimeFromUtc(fechaDevolucionUtc, colombiaZone);
+    }
+}
+
+
+
             return View(prestamos);
         }
 
@@ -152,7 +175,7 @@ namespace Tenis3t.Controllers
                     TallaInventarioId = dto.TallaInventarioId,
                     Cantidad = dto.Cantidad,
                     Estado = "Prestado",
-                    FechaPrestamo = DateTime.Now
+                    FechaPrestamo = DateTime.UtcNow
                 };
 
                 talla.Cantidad -= dto.Cantidad;
@@ -190,7 +213,7 @@ namespace Tenis3t.Controllers
                     TallaInventarioId = dto.TallaInventarioId,
                     Cantidad = dto.Cantidad,
                     Estado = "Prestado",
-                    FechaPrestamo = DateTime.Now,
+                    FechaPrestamo = DateTime.UtcNow,
                     TipoPrestamo = "Persona",
                     LocalPersona = "N/A"
                 };
