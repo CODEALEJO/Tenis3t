@@ -88,6 +88,8 @@ namespace Tenis3t.Controllers
             return View(viewModel);
         }
 
+        // este controlador sirve para imprimir
+
         public async Task<IActionResult> ImprimirExhibiciones(string usuarioReceptor)
         {
             if (!PermissionConstants.IsAdminUser(User.Identity?.Name))
