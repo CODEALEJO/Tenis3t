@@ -36,20 +36,34 @@
         <a asp-action="Create" class="btn btn-success btn-sm float-end">Nuevo Préstamo</a>
     </div>
 
-@* busqueda por nombre *@
-
+    @* busqueda por nombre *@
     <form method="get" asp-action="Index" class="row g-3 mb-4">
-        <div class="col-md-6">
-            <label for="nombre" class="form-label fw-semibold">Buscar por nombre:</label>
-            <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Nombre del producto"
-                value="@ViewBag.FiltroNombre" />
+
+        <!-- Buscar por producto -->
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">
+                Buscar por producto
+            </label>
+            <input type="text" name="nombreProducto" class="form-control" placeholder="Ej: Air Force 1"
+                value="@ViewBag.FiltroNombreProducto" />
         </div>
 
-        <!-- Mantener el filtro actual al hacer búsqueda -->
+        <!-- Buscar por tienda -->
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">
+                Buscar por tienda (local)
+            </label>
+            <input type="text" name="nombreTienda" class="form-control" placeholder="Ej: Local Centro"
+                value="@ViewBag.FiltroNombreTienda" />
+        </div>
+
+        <!-- Mantener filtro activo -->
         <input type="hidden" name="filtro" value="@ViewBag.FiltroSeleccionado" />
 
         <div class="col-md-2 align-self-end">
-            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+            <button type="submit" class="btn btn-primary w-100">
+                Buscar
+            </button>
         </div>
     </form>
 
@@ -60,21 +74,16 @@
             <div class="list-group-item mb-3">
                 <div class="d-flex justify-content-between">
                     <h6 class="mb-1">@item.TallaInventario.Inventario.Nombre (@item.TallaInventario.Talla)</h6>
-                    <span class="badge @(item.Estado?.Trim().Equals("Prestado", StringComparison.OrdinalIgnoreCase) == true ? "bg-warning" 
-                                                                                       : item.Estado?.Trim().Equals("Devuelto", StringComparison.OrdinalIgnoreCase) == true ? "bg-success" 
-                                                                                       : "bg-secondary")">
+                    <span
+                        class="badge @(item.Estado?.Trim().Equals("Prestado", StringComparison.OrdinalIgnoreCase) == true ? "bg-warning" 
+                                                                                                                                                                                         : item.Estado?.Trim().Equals("Devuelto", StringComparison.OrdinalIgnoreCase) == true ? "bg-success" 
+                                                                                                                                                                                         : "bg-secondary")">
                         @item.Estado
                     </span>
                 </div>
                 <small class="text-muted">
-                    @if (ViewBag.FiltroSeleccionado == "recibidos")
-                    {
-                        <span>De: @item.UsuarioPrestamista.UserName</span>
-                    }
-                    else
-                    {
-                        <span>Para: @item.UsuarioReceptor.UserName</span>
-                    }
+                    Prestado por: <strong>@item.UsuarioPrestamista.UserName</strong><br />
+                    Recibido por: <strong>@item.UsuarioReceptor.UserName</strong>
                 </small>
                 <div class="mt-2">
                     <div class="d-flex justify-content-between">
@@ -96,7 +105,10 @@
                         {
                             <form asp-action="Devolver" method="post" class="d-inline @(isAdminUser ? "w-50" : "w-100")">
                                 <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm w-100">Devolver</button>
+                                <button type="submit" class="btn btn-danger btn-sm w-100"
+                                    onclick="return confirm('¿Seguro que deseas devolver este préstamo?')">
+                                    Devolver
+                                </button>
                             </form>
                         }
 

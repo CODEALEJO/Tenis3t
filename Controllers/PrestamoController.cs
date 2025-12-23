@@ -30,7 +30,10 @@ namespace Tenis3t.Controllers
         }
 
         // GET: Prestamo
-        public async Task<IActionResult> Index(string filtro = "todos", string nombre = null)
+        public async Task<IActionResult> Index(
+            string filtro = "todos",
+            string nombreProducto = null,
+            string nombreTienda = null)
         {
             var currentUser = await _userManager.GetUserAsync(User);
 
@@ -41,73 +44,99 @@ namespace Tenis3t.Controllers
                 .Include(p => p.UsuarioReceptor)
                 .AsQueryable();
 
-            // 🔹 Aplicar filtros por tipo de préstamo (como ya lo tienes)
+            // 🔹 Filtro por tipo de préstamo
             switch (filtro.ToLower())
             {
                 case "realizados":
                     query = query.Where(p => p.UsuarioPrestamistaId == currentUser.Id);
                     break;
+
                 case "recibidos":
                     query = query.Where(p => p.UsuarioReceptorId == currentUser.Id);
                     break;
+
                 case "local":
                     query = query.Where(p => p.TipoPrestamo == "Local");
                     break;
+
                 case "todos":
                 default:
-                    query = query.Where(p => p.UsuarioPrestamistaId == currentUser.Id ||
-                                             p.UsuarioReceptorId == currentUser.Id);
+                    query = query.Where(p =>
+                        p.UsuarioPrestamistaId == currentUser.Id ||
+                        p.UsuarioReceptorId == currentUser.Id);
                     break;
             }
 
-            // 🔍 Filtro por nombre del producto
-            if (!string.IsNullOrEmpty(nombre))
+            // 🔍 Filtro por nombre del PRODUCTO
+            if (!string.IsNullOrWhiteSpace(nombreProducto))
             {
-                query = query.Where(p => p.TallaInventario != null &&
-                         p.TallaInventario.Inventario != null &&
-                         p.TallaInventario.Inventario.Nombre.ToLower().Contains(nombre.ToLower().Trim()));
+                var filtroProducto = nombreProducto.Trim().ToLower();
 
-
+                query = query.Where(p =>
+                    p.TallaInventario != null &&
+                    p.TallaInventario.Inventario != null &&
+                    p.TallaInventario.Inventario.Nombre.ToLower().Contains(filtroProducto)
+                );
             }
 
-            // 🔹 Traer y ordenar resultados
+            // 🔍 Filtro por nombre de la TIENDA (usuario prestamista)
+            // 🔍 Filtro por LOCAL involucrado (solo relacionados conmigo)
+            if (!string.IsNullOrWhiteSpace(nombreTienda))
+            {
+                var filtroTienda = nombreTienda.Trim().ToLower();
+                var currentUserId = currentUser.Id;
+
+                query = query.Where(p =>
+                    // Yo presté → buscar en quien recibió
+                    (p.UsuarioPrestamistaId == currentUserId &&
+                     p.UsuarioReceptor != null &&
+                     p.UsuarioReceptor.UserName.ToLower().Contains(filtroTienda))
+
+                    ||
+
+                    // Yo recibí → buscar en quien prestó
+                    (p.UsuarioReceptorId == currentUserId &&
+                     p.UsuarioPrestamista != null &&
+                     p.UsuarioPrestamista.UserName.ToLower().Contains(filtroTienda))
+                );
+            }
+
+            // 🔹 Ejecutar consulta
             var prestamos = await query.ToListAsync();
 
+            // 🔹 Ordenar resultados
             prestamos = prestamos
                 .OrderBy(p => p.Estado?.Trim().ToLower() == "prestado" ? 0 :
                               p.Estado?.Trim().ToLower() == "vendido" ? 1 : 2)
                 .ThenBy(p => p.TallaInventario.Inventario.Nombre)
                 .ToList();
 
-            // 🔹 Mantener los valores en la vista
+            // 🔹 Mantener filtros en la vista
             ViewBag.FiltroSeleccionado = filtro;
-            ViewBag.FiltroNombre = nombre;
+            ViewBag.FiltroNombreProducto = nombreProducto;
+            ViewBag.FiltroNombreTienda = nombreTienda;
 
-            // 🔹 Convertir fechas UTC a hora de Colombia antes de mostrar
+            // 🔹 Convertir fechas UTC → Colombia
             var colombiaZone = TimeZoneInfo.FindSystemTimeZoneById("America/Bogota");
 
-           
+            foreach (var p in prestamos)
+            {
+                if (p.FechaPrestamo != DateTime.MinValue)
+                {
+                    var fechaPrestamoUtc = DateTime.SpecifyKind(p.FechaPrestamo, DateTimeKind.Utc);
+                    p.FechaPrestamo = TimeZoneInfo.ConvertTimeFromUtc(fechaPrestamoUtc, colombiaZone);
+                }
 
-foreach (var p in prestamos)
-{
-    // Si usas DateTime no-nullable, evita convertir fechas vacías (DateTime.MinValue).
-    if (p.FechaPrestamo != DateTime.MinValue)
-    {
-        var fechaPrestamoUtc = DateTime.SpecifyKind(p.FechaPrestamo, DateTimeKind.Utc);
-        p.FechaPrestamo = TimeZoneInfo.ConvertTimeFromUtc(fechaPrestamoUtc, colombiaZone);
-    }
-
-   if (p.FechaDevolucion.HasValue)
-    {
-        var fechaDevolucionUtc = DateTime.SpecifyKind(p.FechaDevolucion.Value, DateTimeKind.Utc);
-        p.FechaDevolucion = TimeZoneInfo.ConvertTimeFromUtc(fechaDevolucionUtc, colombiaZone);
-    }
-}
-
-
+                if (p.FechaDevolucion.HasValue)
+                {
+                    var fechaDevolucionUtc = DateTime.SpecifyKind(p.FechaDevolucion.Value, DateTimeKind.Utc);
+                    p.FechaDevolucion = TimeZoneInfo.ConvertTimeFromUtc(fechaDevolucionUtc, colombiaZone);
+                }
+            }
 
             return View(prestamos);
         }
+
 
 
 
