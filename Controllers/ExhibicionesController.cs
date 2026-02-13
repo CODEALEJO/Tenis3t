@@ -112,7 +112,7 @@ namespace Tenis3t.Controllers
                 .Include(p => p.UsuarioReceptor)
                 .Where(p => p.UsuarioPrestamista.UserName == currentUser &&  // ✅ SOLO DEL USUARIO ACTUAL
                            p.UsuarioReceptor.UserName == usuarioReceptor)
-                .OrderByDescending(p => p.FechaPrestamo)
+                .OrderBy(p => p.TallaInventario.Inventario.Nombre)
                 .ToListAsync();
 
             ViewBag.UsuarioReceptor = usuarioReceptor;
