@@ -112,13 +112,20 @@
                             </form>
                         }
 
-                        @if (isAdminUser && item.UsuarioPrestamistaId == currentUser.Id)
-                        {
-                            <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50" asp-antiforgery="true">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="btn btn-success btn-sm w-100">Marcar como Vendido</button>
-                            </form>
-                        }
+                    @if (isAdminUser && item.UsuarioPrestamistaId == currentUser.Id)
+{
+    <form asp-action="MarcarComoVendido" method="post" class="d-inline w-50">
+        <input type="hidden" name="id" value="@item.Id" />
+        <input type="hidden" name="filtro" value="@ViewBag.FiltroSeleccionado" />
+        <input type="hidden" name="nombreProducto" value="@ViewBag.FiltroNombreProducto" />
+        <input type="hidden" name="nombreTienda" value="@ViewBag.FiltroNombreTienda" />
+
+        <button type="submit" class="btn btn-success btn-sm w-100">
+            Marcar como Vendido
+        </button>
+    </form>
+}
+
                     </div>
                 }
                 else
